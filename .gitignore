@@ -1,0 +1,19 @@
+# Environment & Secrets
+.env
+.venv/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+
+# Local Data Storage
+# Ignore everything in output except the .gitkeep to keep the folder structure
+data/output/*
+!data/output/.gitkeep
+data/input/*
+!data/input/.gitkeep
+
+# IDE Settings
+.vscode/
+.idea/
