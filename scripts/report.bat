@@ -18,15 +18,16 @@ echo ==========================================
 echo.
 
 REM --- AUTOMATIC VENV ACTIVATION ---
-if exist "..\.venv\Scripts\activate.bat" (
+REM %~dp0 refers to the directory where this batch file is located.
+if exist "%~dp0..\.venv\Scripts\activate.bat" (
     echo [System] Activating Virtual Environment...
-    call "..\.venv\Scripts\activate.bat"
+    call "%~dp0..\.venv\Scripts\activate.bat"
 ) else (
-    echo [Warning] Virtual environment (.venv) not found. Using global Python.
+    echo [Warning] .venv not found at %~dp0..\.venv. Using global Python.
 )
 
-REM Pass all arguments to pipeline.py to support --insight and --model
-python "..\src\pipeline.py" %*
+REM Execute the pipeline using absolute pathing
+python "%~dp0..\src\pipeline.py" %*
 
 echo.
 echo Pipeline Complete.
