@@ -1,4 +1,13 @@
+# --- Existing Core Dependencies ---
 pandas
 ollama
 python-dotenv
 requests
+
+# --- New Semantic & RAG Dependencies ---
+pydantic             # Ensures the 'Truth Block' matches the JSON schema
+chromadb             # Local vector database for your 30+ company reports
+langchain            # Orchestration framework for the RAG pipeline
+langchain-community  # Community-driven RAG components and Ollama integrations
+sentence-transformers # Required for local text embeddings (Nomic)
+pypdf2                # For PDF parsing and text extraction

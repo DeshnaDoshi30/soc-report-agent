@@ -1,19 +1,53 @@
-# Environment & Secrets
+# ==============================================================================
+# 🛡️ SOC AGENT: FORENSIC VAULT & RAG EXCLUSIONS
+# ==============================================================================
+
+# 1. Environment & Secrets
 .env
 .venv/
 env/
+*.env.*
 
-# Python Cache
+# 2. Python & System Cache
 __pycache__/
 *.py[cod]
+*$py.class
+.DS_Store
+Thumbs.db
 
-# Local Data Storage
-# Ignore everything in output except the .gitkeep to keep the folder structure
-data/output/*
-!data/output/.gitkeep
+# 3. Forensic Vault (Local Evidence & Reports)
+# We keep the folders via .gitkeep but ignore the actual sensitive data
 data/input/*
 !data/input/.gitkeep
 
-# IDE Settings
+data/output/*
+!data/output/.gitkeep
+
+data/saved/*
+!data/saved/.gitkeep
+
+# 4. RAG Knowledge Base (The "Brain")
+# NEVER commit the vector database (it is large and binary)
+data/vector_db/
+
+# PROTECT SENSITIVE PDFS: 
+# Ignore all company reports and compliance docs in the knowledge folder
+data/knowledge/*
+!data/knowledge/.gitkeep
+
+# 5. Logs & Monitoring
+# Ignore Ollama server logs and local diagnostic traces
+data/*.log
+logs/
+
+# 6. IDE & Tools
 .vscode/
 .idea/
+*.swp
+*.bak
+
+# 7. Model Binaries (Optional Fallback)
+# If you ever store GGUF or Bin models locally instead of via Ollama
+*.gguf
+*.bin
+*.onnx

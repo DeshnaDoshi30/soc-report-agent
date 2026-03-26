@@ -1,7 +1,9 @@
 import sys
-import subprocess
 import socket
+import json
+import logging
 from pathlib import Path
+import subprocess
 
 # --- MODULAR IMPORT FIX ---
 # Ensures we can find config.py even if run from /scripts
@@ -10,13 +12,21 @@ sys.path.append(str(Path(__file__).parent.parent / "src"))
 try:
     import config
     import ollama
+    import chromadb
+    from pydantic import BaseModel
 except ImportError as e:
     print(f"✗ CRITICAL: Missing dependencies. Run: pip install -r requirements.txt\nDetail: {e}")
     sys.exit(1)
 
 def check_python_packages():
-    """Verifies internal library health."""
-    packages = {'ollama': 'AI Client', 'pandas': 'Data Engine', 'requests': 'Networking'}
+    """Verifies library health for RAG and Semantic Extraction."""
+    packages = {
+        'ollama': 'AI Client', 
+        'pandas': 'Data Engine', 
+        'chromadb': 'Vector Database',
+        'pydantic': 'Data Validation',
+        'langchain': 'RAG Framework'
+    }
     print("=" * 60 + "\nCHECKING PYTHON LIBRARIES\n" + "=" * 60)
     
     missing = []
@@ -29,63 +39,83 @@ def check_python_packages():
             missing.append(pkg)
     return not bool(missing)
 
-def check_ollama_service():
-    """Checks if the engine is responding at the configured host."""
-    # Pull host from config instead of hardcoding localhost
-    host_url = config.OLLAMA_HOST.replace("http://", "").split(":")
-    host = host_url[0]
-    port = int(host_url[1]) if len(host_url) > 1 else 11434
-
-    print("\n" + "=" * 60 + f"\nCHECKING OLLAMA SERVICE ({config.OLLAMA_HOST})\n" + "=" * 60)
-    
+def check_gpu_status():
+    """Verifies if the 4x 8GB GPU setup is visible to the OS."""
+    print("\n" + "=" * 60 + "\nCHECKING GPU HARDWARE (NVIDIA-SMI)\n" + "=" * 60)
     try:
-        with socket.create_connection((host, port), timeout=3):
-            print(f"✓ Service is active on {host}:{port}")
-            return True
-    except (socket.error, socket.timeout):
-        print(f"✗ Service unreachable at {host}:{port}")
-        print("  - If local: Run start_ollama.bat")
-        print("  - If office: Check VPN/Network connection")
+        res = subprocess.check_output(["nvidia-smi", "--list-gpus"]).decode('utf-8')
+        gpu_count = len(res.strip().split('\n'))
+        print(f"✓ Detected {gpu_count} GPU(s).")
+        if gpu_count < 4:
+            print(f"  ⚠ Warning: Architecture optimized for 4 GPUs, found {gpu_count}.")
+        return True
+    except Exception:
+        print("✗ Could not detect NVIDIA GPUs. Ensure drivers are installed.")
         return False
 
-def check_model_availability():
-    """Verifies the target model is downloaded."""
-    target = config.DEFAULT_MODEL
-    print("\n" + "=" * 60 + f"\nCHECKING TARGET MODEL: {target}\n" + "=" * 60)
+def check_knowledge_base():
+    """Checks if the RAG 'Brain' has been initialized."""
+    print("\n" + "=" * 60 + "\nCHECKING KNOWLEDGE BASE (RAG)\n" + "=" * 60)
+    db_path = Path(config.VECTOR_DB_DIR)
+    
+    if db_path.exists() and any(db_path.iterdir()):
+        print(f"✓ Vector DB found at {db_path}")
+        return True
+    else:
+        print(f"✗ Vector DB is empty or missing at {db_path}")
+        print("  Action: Run 'python3 src/ingest_knowledge.py' first.")
+        return False
+
+def check_multi_model_availability():
+    """Verifies all three required models are loaded in Ollama."""
+    required_models = [
+        config.EXTRACTOR_MODEL, 
+        config.EMBEDDING_MODEL, 
+        config.REPORT_MODEL
+    ]
+    
+    print("\n" + "=" * 60 + "\nCHECKING OLLAMA MODELS\n" + "=" * 60)
     
     try:
         client = ollama.Client(host=config.OLLAMA_HOST)
-        models = client.list()
+        loaded_models = [m.model for m in client.list().models]
         
-        # Handle different Ollama library response formats
-        model_list = models.models if hasattr(models, 'models') else models.get('models', [])
+        all_present = True
+        for target in required_models:
+            # Check for partial match (e.g. 'qwen2.5:7b' in 'qwen2.5:7b-instruct-q4_K_M')
+            if any(target in m for m in loaded_models):
+                print(f"✓ {target:<20} - READY")
+            else:
+                print(f"✗ {target:<20} - MISSING")
+                all_present = False
         
-        for m in model_list:
-            m_name = getattr(m, 'model', m.get('model', ''))
-            if target in m_name:
-                print(f"✓ Model {target} is loaded and ready.")
-                return True
-        
-        print(f"✗ Model {target} not found.")
-        print(f"  Action: Run pull_model.bat {target}")
-        return False
+        if not all_present:
+            print(f"\nAction: Run './scripts/pull_model.sh --setup-all'")
+        return all_present
     except Exception as e:
-        print(f"✗ Could not query models: {e}")
+        print(f"✗ Service unreachable or error querying models: {e}")
         return False
 
 def main():
-    print(f"\nSOC Agent Setup Audit | Run ID: Diagnostic\n" + "#" * 60)
+    print(f"\n🛡️ SOC Agent Semantic Stack Audit | Version: 2026\n" + "#" * 60)
     results = {
         "Libraries": check_python_packages(),
-        "Service": check_ollama_service(),
-        "Model": check_model_availability()
+        "Hardware": check_gpu_status(),
+        "Knowledge": check_knowledge_base(),
+        "Models": check_multi_model_availability()
     }
     
-    print("\n" + "=" * 60 + "\nFINAL AUDIT SUMMARY\n" + "=" * 60)
+    print("\n" + "=" * 60 + "\nFINAL DEPLOYMENT SUMMARY\n" + "=" * 60)
     for name, passed in results.items():
         print(f"{'✓ PASS' if passed else '✗ FAIL':<10} {name}")
     
-    return 0 if all(results.values()) else 1
+    final_status = all(results.values())
+    if final_status:
+        print("\n🚀 SYSTEM READY FOR INVESTIGATION.")
+    else:
+        print("\n❌ SYSTEM NOT READY. Resolve failures above.")
+    
+    return 0 if final_status else 1
 
 if __name__ == "__main__":
     sys.exit(main())

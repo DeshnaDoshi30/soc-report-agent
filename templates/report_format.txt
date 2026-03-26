@@ -1,0 +1,54 @@
+# SOC INVESTIGATION REPORT: {{primary_classification_calculated}}
+**Report ID**: {{run_id}}  
+**Generated On**: {{analysis_date}}
+
+---
+
+## 1. EXECUTIVE SUMMARY
+The Security Operations Center (SOC) has concluded a detailed investigation into a {{primary_classification_calculated}} event affecting the production environment. This investigation was initiated following {{primary_trigger}} and was further guided by primary investigative insights indicating {{human_insight}}. 
+
+Based on a comprehensive review of host-level configuration data and network artifacts, the detection revealed {{technical_analysis}}. This condition represents a {{evidence_type_narrative}} within the system architecture. While current evidence suggests the threat status is {{final_assessment}}, the identification of these indicators highlights critical areas for security hardening and architectural review.
+
+## 2. INTRODUCTION
+This report documents the forensic analysis of security logs and behavioral patterns conducted to identify infrastructure weaknesses or active threat actors. The objective of this investigation is to validate the detected condition, assess associated security and operational risks, and align the environment with established security best practices and compliance requirements such as ISO/IEC 27001 and PCI DSS.
+
+## 3. INCIDENT DETAILS
+The incident, identified on {{analysis_date}}, primarily affected {{affected_scope}}. Forensic evidence collected via SOC Automated Log Analysis (Forensic Vault) identified key indicators including {{forensic_indicators}}. 
+
+The scope of the investigation involved a deep-scan of behavioral patterns where targets such as {{primary_targets}} were scrutinized. Notably, activity associated with users {{user_activity}} was analyzed alongside geo-indicators originating from {{geo_indicators}}. This phase of the investigation confirms that the detection was a result of {{incident_category}}.
+
+## 4. INVESTIGATION AND FINDINGS
+The investigation involved a multi-stage analysis of {{detection_source}} outputs and forensic artifacts. Technical analysis of the logs confirms that {{technical_analysis}}. In cases of misconfiguration, this state represents a significant deviation from the principle of least privilege, specifically regarding {{permission_bits}} on critical assets. 
+
+Pattern analysis suggests that this event is {{pattern_analysis}}. By correlating file metadata, ownership details, and cryptographic hashes, the SOC has determined that the risk is systemic rather than an isolated anomaly. No discrepancies were observed between different monitoring outputs, confirming the persistence of the identified condition.
+
+## 5. IMPACT ASSESSMENT
+**Confidentiality**: The risk to confidentiality is assessed as {{confidentiality_rank}}. {{confidentiality_justification}}.
+
+**Integrity**: The risk to data and system integrity is assessed as {{integrity_rank}}. {{integrity_justification}}. The presence of unauthorized or excessive permissions weakens access control enforcement and potentially affects the integrity of application and database operations.
+
+**Availability**: The impact on service availability is assessed as {{availability_rank}}. {{availability_justification}}.
+
+**Overall Risk Score**: {{overall_risk_score}}
+
+## 6. RESPONSE ACTIONS AND OBSERVABILITY
+Immediate actions were taken to validate the reported condition and preserve evidence for auditability. Currently, the incident status is {{current_status}}. 
+
+During the response phase, several observability gaps were identified, including {{observability_gaps}}. These limitations prevented a full reconstruction of user intent or shell history, suggesting a need for enhanced host-based logging and network-level controls.
+
+## 7. ROOT CAUSE ANALYSIS
+The primary trigger for this investigation was {{primary_trigger}}. Root cause analysis identifies that the condition was driven by {{contributing_factors}}. 
+
+Specifically, the absence of enforced configuration baselines and the storage of sensitive artifacts within runtime application paths increased exposure. These factors suggest a lack of automated hardening checks during the deployment or maintenance cycles, allowing the insecure state to persist until detected by automated monitoring.
+
+## 8. LESSONS LEARNED AND RECOMMENDATIONS
+The identification of this issue underscores the systemic risk introduced by insecure configurations and the importance of host-based monitoring. To mitigate future risk and improve security posture, the following hardening steps are recommended:
+
+{{hardening_steps}}
+
+Furthermore, a long-term strategy involving {{long_term_strategy}} should be implemented to ensure that file ownership and permission settings remain aligned with security best practices over time.
+
+## 9. CONCLUSION
+The investigation into the {{primary_classification_calculated}} on host {{hostnames}} has been finalized. Based on the evidence reviewed, the threat is currently {{final_assessment}}. Addressing the identified weaknesses through the recommended remediation and preventive controls will help reduce exposure and strengthen system integrity. 
+
+Ongoing configuration governance is essential to prevent similar issues from persisting in the future and to maintain alignment with global security compliance requirements.

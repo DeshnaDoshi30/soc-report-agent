@@ -1,39 +1,38 @@
-# SOC Report Agent - User Guide (v2026)
+# 🛡️ SOC Report Agent - User Guide (v2026)
 
 ## 1. Overview
-The SOC Report Agent is a Tier 3 forensic tool designed to convert raw security logs (CSV) or manual incident notes (TXT) into professional, fact-based reports. It uses the **Qwen 2.5 Coder** model, optimized to run locally on machines with **8GB RAM**.
+The SOC Report Agent is a Tier 3 forensic suite designed to transform raw security logs (CSV) or manual notes (JSON/TXT) into professional, narrative-driven reports. Utilizing a **Multi-Agent RAG Pipeline**, it fuses current forensic facts with historical company expertise to produce executive-level intelligence.
 
-### Key Features:
-* **Forensic Vault**: Every investigation is saved with a unique timestamp. No data is ever overwritten.
-* **Human-in-the-Loop**: Analyst insights provided via the command line take priority over machine-detected logs.
-* **Universal Routing**: Automatically handles Wazuh logs, FIM (File Integrity) alerts, and Email Security (SPF/DKIM) failures.
-* **Hallucination Detection**: Every report is audited against source facts to prevent the AI from inventing IPs or costs.
+### High-Performance Features:
+* **Semantic RAG Memory**: Automatically retrieves and cites historical company reports from a local **ChromaDB** vault.
+* **JSON-Native Truth Block**: Uses a structured forensic anchor to ensure 100% data integrity between logs and reports.
+* **Deep Reasoning**: Powered by **DeepSeek-R1**, providing "Chain-of-Thought" analysis of security risks.
+* **Hallucination Auditor**: A JSON-verified validator that cross-references AI narratives against original forensic indicators.
 
 ---
 
-## 2. Quick Start
+## 2. Quick Start (Ubuntu GPU Server)
 
-### Path A: I have Raw CSV Logs
-Use this for bulk analysis of automated alerts.
-1. Open a terminal in `scripts/`.
-2. Run: `report.bat my_logs.csv`
+### Phase 1: Initialize the "Brain"
+Before running investigations, you must index your company's historical expertise:
+1. Open a terminal in the project root.
+2. Run: `python3 src/ingest_knowledge.py`
 
-### Path B: I have Manual Incident Notes
-Use this to format your own investigation notes.
-1. Run: `report.bat incident.txt`
+### Phase 2: The Investigation
+**Path A: The Standard Workflow (CSV)** Use this for automated log analysis (Wazuh, SonicWall, etc.).
+1. Run: `./scripts/report.sh logs.csv --insight "Suspected unauthorized lateral movement."`
 
-### Path C: The "Expert" Workflow (Recommended)
-Provide your manual conclusions to guide the AI's final report.
-1. Run: `report.bat logs.csv --insight "Confirmed internal vulnerability scan by the IT team."`
+**Path B: The Expert Re-Run (JSON)** Use this to re-generate a report from an existing forensic truth block.
+1. Run: `./scripts/report.sh data/output/incident_[ID].json`
 
 ---
 
 ## 3. The Forensic Vault (Output)
-To ensure forensic integrity, the system saves three distinct files for every run in `data/output/`. These are linked by a unique **Run ID** (YYYYMMDD_HHMMSS):
+To ensure forensic integrity, the system saves three synchronized files in `data/output/` for every run, linked by a unique **Run ID** (YYYYMMDD_HHMMSS):
 
-1.  **`incident_[ID].txt`**: The "Truth Block" containing merged human and machine facts.
-2.  **`incident_report_[ID].md`**: The final formatted AI report.
-3.  **`validation_[ID].txt`**: The accuracy audit identifying any potential AI fabrications.
+1.  **`incident_[ID].json`**: The **Semantic Truth Block**. This is the authoritative forensic anchor.
+2.  **`incident_report_[ID].md`**: The final **Tier 3 Narrative Report** containing RAG-enriched context.
+3.  **`validation_[ID].txt`**: The **Accuracy Audit** identifying any data inconsistencies or fabrications.
 
 ---
 
@@ -41,33 +40,32 @@ To ensure forensic integrity, the system saves three distinct files for every ru
 
 | Command | Purpose |
 | :--- | :--- |
-| `report.bat <file>` | Main command to generate a report. |
-| `--insight "text"` | **Critical**: Imparts human expert conclusions to the AI. |
-| `--model <name>` | Overrides the default model (e.g., `--model llama3`). |
-| `start_ollama.bat` | Starts the local AI server. |
-| `list_models.bat` | Shows models currently installed on your machine. |
+| `./scripts/report.sh <file>` | Main entry point for investigations. |
+| `--insight "text"` | **Critical**: Imparts your expert conclusions as the primary truth. |
+| `./scripts/start_ollama.sh` | Ignites the service with **4x 8GB GPU** load balancing. |
+| `./scripts/pull_model.sh --setup-all` | Downloads the full Qwen, Nomic, and DeepSeek stack. |
+| `python3 scripts/verify_setup.py` | Runs a full diagnostic of GPUs, models, and RAG health. |
 
 ---
 
-## 5. Domain Support
-The Agent is pre-trained to recognize specific security domains:
+## 5. Domain & Reasoning Support
+The Agent leverages **DeepSeek-R1** to reason across complex security domains:
 
-* **Network Attacks**: Brute force, port scans, and IP blocking.
-* **Configuration (FIM)**: World-writable (777) permissions and suspicious file paths (e.g., webshells).
-* **Policy/Email**: SPF, DKIM, and DMARC failures, as well as unauthorized internal access.
+* **Network Forensics**: Analyzes volume, protocols, and geo-indicators to identify intent.
+* **Infrastructure (FIM)**: Evaluates the risk of world-writable (777) paths in the context of your specific app stack.
+* **Compliance (RAG)**: Automatically maps findings to **ISO 27001** or **PCI DSS** standards if found in your historical database.
 
 ---
 
-## 6. Customization
-The system is designed with a **Single Point of Decision** model:
+## 6. Hardware Optimization
+The system is built to scale across different environments:
 
-* **Hardware/Model**: Edit `src/config.py` to change the local model name or to point to an office GPU server.
-* **AI Tone**: Edit `templates/prompt_template.txt` to adjust how strictly the AI follows the logs.
-* **Report Style**: Edit `templates/report_format.txt` to change headers or sections.
+* **Pro GPU Mode (Default)**: Uses 32GB VRAM and a **32,768 context window** for deep, multi-log analysis.
+* **Laptop Mode (Fallback)**: Automatically switches to **Qwen-3B** and a **4,096 context window** if set in the `.env` file to protect 8GB RAM machines.
 
 ---
 
 ## 7. Troubleshooting
-* **RAM Issues**: If the system slows down, ensure no other heavy apps are running. The Agent is capped at a 4096 context window to protect your **8GB RAM**.
-* **Hallucination Warnings**: If `validation_[ID].txt` shows high-severity issues, check if the AI invented a cost or a nation-state actor.
-* **Ollama Errors**: Ensure `start_ollama.bat` is running in a separate window before starting the pipeline.
+* **VRAM Spills**: If the system slows down on the server, run `nvidia-smi` to ensure all 4 GPUs are visible and not shared with other processes.
+* **Knowledge Gaps**: If the report lacks company "voice," ensure you have run the `ingest_knowledge.py` script recently.
+* **Audit Alerts**: If `validation_[ID].txt` flags "CRITICAL" issues, the AI has likely hallucinated an IP or a security claim not present in the original logs.

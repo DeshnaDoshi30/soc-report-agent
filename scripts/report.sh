@@ -1,44 +1,63 @@
 #!/bin/bash
 # Universal Entry Point - Forensic Vault Edition (Linux/Ubuntu)
-# Usage: ./report.sh input_file [--insight "Your findings"] [--model model_name]
+# Refactored for Semantic RAG Pipeline (v2026)
+# Usage: ./report.sh input_file [--insight "Your findings"]
 
 # 1. Usage Check
 if [ -z "$1" ]; then
-    echo "Usage: ./report.sh input_file [--insight \"Text\"] [--model name]"
+    echo "Usage: ./report.sh input_file [--insight \"Text\"]"
     exit 1
 fi
 
 # 2. File Existence Check
 if [ ! -f "$1" ]; then
-    echo "Error: File not found: \"$1\""
+    echo "Error: Forensic source not found: \"$1\""
     exit 1
 fi
 
 echo ""
 echo "=========================================="
-echo "SOC AGENT: FORENSIC PIPELINE (v2026)"
+echo "🛡️ SOC AGENT: SEMANTIC RAG PIPELINE (v2026)"
 echo "=========================================="
 echo ""
 
-# 3. AUTOMATIC VENV ACTIVATION
-# Note: Linux uses bin/activate instead of Scripts/activate.bat
+# 3. PRE-FLIGHT CHECKS (GPU AGNOSTIC)
+
+# Check for Knowledge Base (RAG)
+# If the vector_db folder is missing, the agent will have no 'memory'
+if [ ! -d "../data/vector_db" ]; then
+    echo "⚠️ [Warning] Knowledge Base (RAG) not found in vault."
+    echo "   Please run: python3 ../src/ingest_knowledge.py"
+    echo "   Continuing with basic extraction only..."
+    echo ""
+fi
+
+# Check if Ollama is reachable
+if ! curl -s http://localhost:11434/api/tags > /dev/null; then
+    echo "❌ [Error] Ollama is not running."
+    echo "   Please run: ./scripts/start_ollama.sh"
+    exit 1
+fi
+
+# 4. AUTOMATIC VENV ACTIVATION
 if [ -f "../.venv/bin/activate" ]; then
     echo "[System] Activating Linux Virtual Environment..."
     source "../.venv/bin/activate"
 else
-    echo "[Warning] Virtual environment (.venv) not found. Using system Python3."
+    echo "[Warning] .venv not found. Ensure dependencies are installed."
 fi
 
-# 4. Execute Pipeline
-# "$@" passes all arguments exactly as you typed them (like %* in Windows)
+# 5. EXECUTE PIPELINE
+# Passes all arguments directly to the Master Orchestrator
 python3 "../src/pipeline.py" "$@"
 
 echo ""
-echo "Pipeline Complete."
+echo "Investigation Complete."
 echo "------------------------------------------"
-echo "Check \"data/output/\" for synchronized Run ID files."
+echo "Vault Results Location: data/output/"
+echo "Sync ID: (Check logs above for Run ID)"
 echo "------------------------------------------"
 echo ""
 
-# 5. Pause equivalent in Linux
-read -p "Press [Enter] to continue..."
+# 6. Pause equivalent in Linux
+read -p "Press [Enter] to return to terminal..."
