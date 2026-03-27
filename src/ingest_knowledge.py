@@ -4,7 +4,7 @@ from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from src.config import VECTOR_DB_DIR, EMBEDDING_MODEL, OLLAMA_HOST
 
 # Setup professional logging
@@ -28,7 +28,7 @@ def build_knowledge_base():
     loader = DirectoryLoader(
         str(KNOWLEDGE_DIR), 
         glob="**/[!.]*.*", 
-        loader_cls=PyPDFLoader,
+        loader_cls=PyPDFLoader, # type: ignore
         show_progress=True
     )
     
@@ -47,7 +47,7 @@ def build_knowledge_base():
     # This allows the AI to see more 'surrounding context' for each finding.
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1200, 
-        chunk_overlap=150,
+        chunk_overlap=250,
         add_start_index=True
     )
     docs = text_splitter.split_documents(raw_documents)

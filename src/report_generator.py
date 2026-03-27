@@ -1,10 +1,10 @@
 import json
 import logging
-import ollama  # Using native library for better GPU/Context management
+import ollama  
 from pathlib import Path
 from typing import Optional
-import config
-from report_validator import HallucinationDetector
+import src.config as config # Ensure correct import path
+from src.report_validator import HallucinationDetector
 
 # Setup professional logging
 logger = logging.getLogger(__name__)
@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)
 class IncidentReportGenerator:
     def __init__(self, model: Optional[str] = None, ollama_host: Optional[str] = None):
         """
-        AI Reasoning Engine optimized for DeepSeek-R1 and GPU Hardware.
-        Handles JSON Truth Blocks and RAG Context injection.
+        AI Reasoning Engine optimized for Sequential Model Execution.
         """
         self.model = model or config.REPORT_MODEL
         self.host = ollama_host or config.OLLAMA_HOST
@@ -37,44 +36,40 @@ class IncidentReportGenerator:
             report_format = self._load_template("report_format.txt")
 
             # 3. Construct the Lead-Level Authority Prompt
-            # We provide the AI with 'Truth' (JSON) + 'Experience' (RAG)
             full_prompt = f"""
             {system_prompt}
 
             ### 1. EXPERT CONTEXT (RAG)
-            Use the following historical reports and compliance guides to inform your tone and recommendations:
             {rag_context}
 
             ### 2. PRIMARY INCIDENT TRUTH (JSON)
-            Extract the specific facts from this validated forensic data:
             {json.dumps(incident_data, indent=2)}
 
             ### 3. REQUIRED REPORT STRUCTURE
-            Follow this format exactly:
             {report_format}
 
             STRICT INSTRUCTION: 
             - Do not mention 'JSON' or 'RAG' in the report. 
             - Match the professional Tier 3 tone of your historical context.
-            - Prioritize 'Analyst Notes' found in the JSON data.
             """
 
-            logger.info(f"Generating Lead-Level Report with {self.model} (Context: {config.NUM_CTX})")
+            logger.info(f"Generating Lead-Level Report with {self.model} (Sequential Flush: ON)")
             
-            # 4. AI Generation (Optimized for 32GB VRAM)
+            # 4. AI Generation (SEQUENTIAL FLUSHING ENABLED)
+            # We add 'keep_alive' here to ensure the GPUs are cleared immediately after use.
             response = ollama.chat(
                 model=self.model,
                 messages=[{'role': 'user', 'content': full_prompt}],
+                keep_alive=config.KEEP_ALIVE, # <--- THIS FLUSHES THE VRAM
                 options={
                     "num_ctx": config.NUM_CTX,
-                    "temperature": 0.3 # Low temp for factual reporting
+                    "temperature": 0.3
                 }
             )
             
             raw_report = response['message']['content']
 
             # 5. POST-PROCESSING: Handle DeepSeek-R1 'Think' tags
-            # We strip the internal reasoning block for the final professional output
             if "<think>" in raw_report:
                 report_content = raw_report.split("</think>")[-1].strip()
             else:
@@ -87,7 +82,6 @@ class IncidentReportGenerator:
             print(f"✓ Professional Report Vaulted: {report_path.name}")
 
             # 7. VALIDATION PHASE
-            # We pass the original JSON string for the detector to audit
             self._validate_results(report_content, json.dumps(incident_data), run_id)
 
             return True 

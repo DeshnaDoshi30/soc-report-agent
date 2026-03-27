@@ -9,5 +9,6 @@ pydantic             # Ensures the 'Truth Block' matches the JSON schema
 chromadb             # Local vector database for your 30+ company reports
 langchain            # Orchestration framework for the RAG pipeline
 langchain-community  # Community-driven RAG components and Ollama integrations
+langchain-text-splitters # For splitting long documents into manageable chunks
 sentence-transformers # Required for local text embeddings (Nomic)
 pypdf2                # For PDF parsing and text extraction
