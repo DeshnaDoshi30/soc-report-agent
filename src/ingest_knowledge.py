@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader, TextLoader, BaseLoader
+from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader, TextLoader
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -25,25 +25,21 @@ def build_knowledge_base():
 
     logger.info(f"🚀 Starting RAG Ingestion from: {KNOWLEDGE_DIR}")
 
-    # 1. We "cast" the loaders to satisfy Pylance's strict type checking
-    pdf_cls = cast(Type[BaseLoader], PyPDFLoader)
-    txt_cls = cast(Type[BaseLoader], TextLoader)
-
-    # 2. LOAD PDFs
+    # 1. LOAD PDFs ONLY
     pdf_loader = DirectoryLoader(
         str(KNOWLEDGE_DIR), 
-        glob="**/*.pdf", 
-        loader_cls=pdf_cls, # Now Pylance is happy
+        glob="**/*.pdf",  # <--- Strictly only PDFs
+        loader_cls=PyPDFLoader,
         show_progress=True
     )
     
-    # 3. LOAD TXT
+    # 2. LOAD TEXT FILES (Like your compliance_standards.txt)
     text_loader = DirectoryLoader(
         str(KNOWLEDGE_DIR), 
-        glob="**/*.txt", 
-        loader_cls=txt_cls
+        glob="**/*.txt",  # <--- Strictly only TXT
+        loader_cls=TextLoader
     )
-    
+
     try:
         # Load both and combine them
         pdf_docs = pdf_loader.load()
