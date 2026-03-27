@@ -1,37 +1,31 @@
 #!/bin/bash
 
-# 1. SMART PATHING: Find the project root relative to this script
-# This finds the directory where 'report.sh' lives, then goes up one level
+# 1. SMART PATHING
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
-# 2. MOVE TO ROOT: Everything happens from the project home
 cd "$PROJECT_ROOT" || exit
 
 echo "=========================================="
 echo "🛡️ SOC AGENT: SEMANTIC RAG PIPELINE (v2026)"
 echo "=========================================="
 
-# 3. CHECK FOR KNOWLEDGE BASE (Vector DB)
-if [ ! -d "data/vector_db" ]; then
-    echo "⚠️ [Warning] Knowledge Base (RAG) not found in data/vector_db"
-    echo "   Continuing with basic extraction only..."
-fi
-
-# 4. ACTIVATE VIRTUAL ENVIRONMENT
+# 2. FLEXIBLE VENV ACTIVATION
+# Checks for .venv, then venv, then skips if already active
 if [ -f ".venv/bin/activate" ]; then
     source ".venv/bin/activate"
+elif [ -f "venv/bin/activate" ]; then
+    source "venv/bin/activate"
+elif [[ "$VIRTUAL_ENV" != "" ]]; then
+    echo "✅ [System] Using already active environment: $VIRTUAL_ENV"
 else
-    echo "❌ [Error] .venv not found in $PROJECT_ROOT"
-    exit 1
+    echo "⚠️ [Warning] No virtual environment found. Running with system Python."
 fi
 
-# 5. GPU OPTIMIZATION (Use your 3 GPUs)
+# 3. GPU OPTIMIZATION
 export CUDA_VISIBLE_DEVICES=0,1,2
 export OLLAMA_MAX_LOADED_MODELS=1
 
-# 6. EXECUTE MASTER PIPELINE
-# We use -m src.pipeline to solve the "No module named src" error forever
+# 4. EXECUTE PIPELINE
 python3 -m src.pipeline "$@"
 
 echo ""
