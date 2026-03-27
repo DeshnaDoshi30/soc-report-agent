@@ -1,10 +1,11 @@
 import logging
 import os
 from pathlib import Path
-from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
+from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader, TextLoader, BaseLoader
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from typing import Any, Type, cast 
 from src.config import VECTOR_DB_DIR, EMBEDDING_MODEL, OLLAMA_HOST
 
 # Setup professional logging
@@ -24,22 +25,37 @@ def build_knowledge_base():
 
     logger.info(f"🚀 Starting RAG Ingestion from: {KNOWLEDGE_DIR}")
 
-    # 1. Load all PDFs from the directory using DirectoryLoader for efficiency
-    loader = DirectoryLoader(
+    # 1. We "cast" the loaders to satisfy Pylance's strict type checking
+    pdf_cls = cast(Type[BaseLoader], PyPDFLoader)
+    txt_cls = cast(Type[BaseLoader], TextLoader)
+
+    # 2. LOAD PDFs
+    pdf_loader = DirectoryLoader(
         str(KNOWLEDGE_DIR), 
-        glob="**/[!.]*.*", 
-        loader_cls=PyPDFLoader, # type: ignore
+        glob="**/*.pdf", 
+        loader_cls=pdf_cls, # Now Pylance is happy
         show_progress=True
     )
     
+    # 3. LOAD TXT
+    text_loader = DirectoryLoader(
+        str(KNOWLEDGE_DIR), 
+        glob="**/*.txt", 
+        loader_cls=txt_cls
+    )
+    
     try:
-        raw_documents = loader.load()
+        # Load both and combine them
+        pdf_docs = pdf_loader.load()
+        txt_docs = text_loader.load()
+        raw_documents = pdf_docs + txt_docs
+        
         if not raw_documents:
-            logger.error("No PDF documents found in data/knowledge/. Ingestion aborted.")
+            logger.error("No documents found. Ingestion aborted.")
             return
-        logger.info(f"Successfully loaded {len(raw_documents)} pages from PDF reports.")
+        logger.info(f"Successfully loaded {len(raw_documents)} documents.")
     except Exception as e:
-        logger.error(f"Failed to load PDFs: {e}")
+        logger.error(f"Failed to load documents: {e}")
         return
 
     # 2. Optimized Chunking for DeepSeek-R1

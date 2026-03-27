@@ -1,14 +1,19 @@
-# --- Existing Core Dependencies ---
+# --- Core Logic & API ---
 pandas
 ollama
 python-dotenv
 requests
+pydantic>=2.0.0
 
-# --- New Semantic & RAG Dependencies ---
-pydantic             # Ensures the 'Truth Block' matches the JSON schema
-chromadb             # Local vector database for your 30+ company reports
-langchain            # Orchestration framework for the RAG pipeline
-langchain-community  # Community-driven RAG components and Ollama integrations
-langchain-text-splitters # For splitting long documents into manageable chunks
-sentence-transformers # Required for local text embeddings (Nomic)
-pypdf2                # For PDF parsing and text extraction
+# --- LangChain 2026 Orchestration ---
+langchain
+langchain-text-splitters
+langchain-ollama        # Specific high-speed integration for your GPU server
+langchain-chroma        # Dedicated, type-safe ChromaDB wrapper
+
+# --- PDF & Data Parsing ---
+pypdf                   # Modern replacement for pypdf2 (better for 12-page reports)
+unstructured[pdf]       # Required by DirectoryLoader for advanced parsing
+
+# --- Vector Database ---
+chromadb
