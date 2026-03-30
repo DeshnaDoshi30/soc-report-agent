@@ -48,22 +48,27 @@ class IncidentReportGenerator:
             ### 3. REQUIRED REPORT STRUCTURE
             {report_format}
 
-            STRICT INSTRUCTION: 
-            - Do not mention 'JSON' or 'RAG' in the report. 
-            - Match the professional Tier 3 tone of your historical context.
+            ### 4. ELABORATION DIRECTIVES:
+            - Provide a deep-dive forensic analysis for every finding.
+            - Do not summarize; instead, elaborate on the technical implications of each indicator.
+            - For every IP or attack pattern, explain the potential 'Attacker Intent' and the 'Risk to Infrastructure'.
+            - Use professional, verbose, and authoritative SOC Tier 3 terminology.
+            - Ensure the 'Recommendations' section includes both immediate 'Patch' actions and 'Long-term Strategic' shifts.
             """
 
-            logger.info(f"Generating Lead-Level Report with {self.model} (Sequential Flush: ON)")
+            logger.info(f"Generating ELABORATE Report with {self.model} (Max Tokens: {config.NUM_PREDICT})")
             
-            # 4. AI Generation (SEQUENTIAL FLUSHING ENABLED)
-            # We add 'keep_alive' here to ensure the GPUs are cleared immediately after use.
+            # 4. AI Generation (WITH EXTENDED PARAMETERS)
             response = ollama.chat(
                 model=self.model,
                 messages=[{'role': 'user', 'content': full_prompt}],
-                keep_alive=config.KEEP_ALIVE, # <--- THIS FLUSHES THE VRAM
+                keep_alive=config.KEEP_ALIVE,
                 options={
                     "num_ctx": config.NUM_CTX,
-                    "temperature": 0.3
+                    "num_predict": config.NUM_PREDICT, # Allow for a massive output
+                    "temperature": config.REPORT_TEMP, # Give it "room" to be descriptive
+                    "repeat_penalty": config.REPEAT_PENALTY, # Ensure long text stays fresh
+                    "top_p": 0.9, # Adds diversity to word choice
                 }
             )
             

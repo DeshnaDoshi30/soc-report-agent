@@ -42,9 +42,12 @@ if not REPORT_MODEL:
 # This makes room for the next model so they don't fight for VRAM.
 KEEP_ALIVE = 0 
 
-# --- PERFORMANCE ---
-REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", 600)) # 10 mins for deep reasoning
-NUM_CTX = 16384  # 16k is safer for 24GB VRAM to avoid 'Out of Memory' crashes
+# --- PERFORMANCE & VERBOSITY ---
+REQUEST_TIMEOUT = 900  # Increased to 15 mins for longer generation
+NUM_CTX = 16384        # Keep at 16k
+NUM_PREDICT = 8192     # <--- ADDED: This is the max tokens the model can output
+REPORT_TEMP = 0.7      # <--- ADDED: Higher temp for more descriptive, elaborate language
+REPEAT_PENALTY = 1.1   # <--- ADDED: Prevents the model from repeating itself in long reports
 
 # --- FORENSIC VAULT ---
 REPORT_TEMPLATE = TEMPLATES_DIR / "report_format.txt"
