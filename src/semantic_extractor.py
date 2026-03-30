@@ -5,88 +5,103 @@ import ollama
 from pathlib import Path
 from typing import Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from src import config
 
-# Setup professional logging
 logger = logging.getLogger(__name__)
 
-# --- STEP 1: Define the mold (The Truth Block) ---
 class IncidentSchema(BaseModel):
-    primary_classification: str = Field(description="Calculated category of the incident")
-    target_ips: list[str] = Field(default_factory=list)
-    file_paths: list[str] = Field(default_factory=list)
-    permission_bits: str = Field(default="N/A")
-    mitre_query: str = Field(description="A search query for the RAG pipeline")
-    technical_summary: str = Field(description="A brief technical explanation")
+    primary_classification: str = Field(description="Calculated category of the incident (e.g., Phishing, Brute Force, Unauthorized Access)")
+    target_ips: list[str] = Field(default_factory=list, description="List of involved IP addresses")
+    file_paths: list[str] = Field(default_factory=list, description="List of involved system file paths")
+    permission_bits: str = Field(default="N/A", description="Any file permissions mentioned (e.g., 777, rwxr-xr-x)")
+    mitre_query: str = Field(description="A concise 3-5 word search query for a security knowledge base")
+    technical_summary: str = Field(description="A 2-sentence technical summary of the activity")
 
 class SemanticExtractor:
     def __init__(self, df: pd.DataFrame, run_id: str = "N/A", model: str | None = None):
         self.df = df
         self.run_id = run_id
-        # Uses config.EXTRACTOR_MODEL (qwen2.5:7b) by default
         self.model = model or config.EXTRACTOR_MODEL 
         self.facts: Dict[str, Any] = {}
 
     def extract_all_facts(self, human_insight: str = "") -> Dict[str, Any]:
-        """Replaces regex with LLM extraction + Sequential VRAM Flush."""
+        """Extracts facts from either raw logs or narrative incident reports."""
         
-        # 1. Prepare raw evidence (head(10) to stay safe on VRAM)
-        raw_evidence = " ".join(self.df['Full_Evidence'].astype(str).head(10).tolist())
+        # 1. Prepare Evidence
+        # If it's a text file, it will likely be 1 big row. If logs, many rows.
+        is_narrative = len(self.df) <= 1
+        raw_evidence = " ".join(self.df['Full_Evidence'].astype(str).head(15).tolist())
         
-        # 2. Construct the Semantic Prompt
+        # 2. Context-Aware Instructions
+        input_mode = "NARRATIVE REPORT" if is_narrative else "SYSTEM LOG STREAM"
+        
+        json_structure = IncidentSchema.model_json_schema()
+        
         prompt = f"""
-        Analyze these security logs and extract facts into JSON.
+        You are a Senior SOC Analyst. Analyze the following {input_mode} and extract forensic facts.
         
-        LOG DATA:
+        REQUIRED JSON SCHEMA:
+        {json.dumps(json_structure['properties'], indent=2)}
+
+        ---
+        EVIDENCE DATA ({input_mode}):
         {raw_evidence}
         
-        ANALYST INSIGHT:
-        {human_insight}
-        
+        ANALYST INPUT/HINT:
+        {human_insight if human_insight else "No additional hints provided."}
+        ---
+
         INSTRUCTIONS:
-        1. Identify if this is a network attack or a misconfiguration.
-        2. Extract all IPs and File Paths.
-        3. Generate a 'mitre_query' for RAG search.
-        4. Return ONLY valid JSON.
+        1. Return ONLY a flat JSON object. No conversational text.
+        2. If data for a field is missing (like permission_bits), use "N/A".
+        3. 'mitre_query' should be optimized for a vector database search (e.g., "T1059 Command and Scripting Interpreter").
+        4. In {input_mode} mode, look for {'intent and actor descriptions' if is_narrative else 'patterns in IP addresses and timestamps'}.
         """
 
         try:
-            # 3. Call the local LLM with SEQUENTIAL FLUSHING
-            # keep_alive=config.KEEP_ALIVE (0) clears the GPU immediately after this call.
             response = ollama.chat(
                 model=self.model,
                 messages=[{'role': 'user', 'content': prompt}],
                 format='json',
-                keep_alive=config.KEEP_ALIVE, # <--- CLEARS GPU FOR DEEPSEEK
+                keep_alive=config.KEEP_ALIVE, 
                 options={
-                    "num_ctx": config.NUM_CTX, # Uses 16384 from config
-                    "temperature": 0.1
+                    "num_ctx": config.NUM_CTX, 
+                    "temperature": 0.0 
                 }
             )
             
-            # 4. Parse into our Truth Block
-            extracted_json = json.loads(response['message']['content'])
+            raw_content = response['message']['content']
+            extracted_json = json.loads(raw_content)
+            
+            # Smart Unwrapping (Our previous fix)
+            if len(extracted_json) == 1 and isinstance(list(extracted_json.values())[0], dict):
+                extracted_json = list(extracted_json.values())[0]
+            
+            # Validate with Pydantic
             validated_data = IncidentSchema(**extracted_json)
             
             self.facts = {
                 "METADATA": {
                     "run_id": self.run_id,
                     "timestamp": datetime.now().isoformat(),
-                    "total_records": len(self.df)
+                    "input_mode": input_mode,
+                    "total_records_sampled": len(self.df.head(15))
                 },
-                "FINDINGS": validated_data.dict()
+                "FINDINGS": validated_data.model_dump()
             }
             
-            logger.info(f"✓ Semantic Extraction Complete. Model {self.model} flushed from VRAM.")
+            logger.info(f"✓ Semantic Extraction ({input_mode}) Complete.")
             return self.facts
 
+        except ValidationError as ve:
+            logger.error(f"❌ Schema Validation Error: {ve}")
+            return {"error": "AI response did not match the forensic schema."}
         except Exception as e:
-            logger.error(f"Semantic Extraction Failed: {e}")
-            return {"error": "Extraction failed, falling back to basic metadata."}
+            logger.error(f"❌ Extraction Failed: {e}")
+            return {"error": str(e)}
 
     def export_vault(self, output_path: Path):
-        """Save the JSON Truth Block to the Forensic Vault."""
         with open(output_path, 'w') as f:
             json.dump(self.facts, f, indent=4)
-        logger.info(f"Forensic JSON vaulted to: {output_path}")
+        logger.info(f"Forensic JSON vaulted: {output_path}")
