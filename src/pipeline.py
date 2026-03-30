@@ -1,103 +1,166 @@
-import pandas as pd
+import sys
 import logging
+import argparse
 import json
-import ollama  
+import pandas as pd
 from pathlib import Path
-from typing import Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, ValidationError # Added ValidationError
-from src import config
+from typing import Optional
 
+# Standardized SOC Imports
+try:
+    from src import config
+    from src.csv_to_incident import CSVToIncidentConverter
+    from src.semantic_extractor import SemanticExtractor
+    from src.knowledge_base import fetch_expert_context
+    from src.report_generator import IncidentReportGenerator
+except ImportError as e:
+    print(f"CRITICAL ERROR: Project structure invalid or missing dependencies: {e}")
+    sys.exit(1)
+
+# Configure professional logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler()]
+)
 logger = logging.getLogger(__name__)
 
-class IncidentSchema(BaseModel):
-    primary_classification: str = Field(description="Calculated category of the incident")
-    target_ips: list[str] = Field(default_factory=list)
-    file_paths: list[str] = Field(default_factory=list)
-    permission_bits: str = Field(default="N/A")
-    mitre_query: str = Field(description="A search query for the RAG pipeline")
-    technical_summary: str = Field(description="A brief technical explanation")
+class UnifiedPipeline:
+    def __init__(self, input_file: str, human_insight: str = "", model: Optional[str] = None):
+        self.input_file = Path(input_file)
+        self.human_insight = human_insight
+        
+        # Unique RUN ID: The 'Glue' for the Forensic Vault
+        self.run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Ensure output directory exists
+        self.output_dir = config.OUTPUT_DIR
+        self.output_dir.mkdir(parents=True, exist_ok=True)
 
-class SemanticExtractor:
-    def __init__(self, df: pd.DataFrame, run_id: str = "N/A", model: str | None = None):
-        self.df = df
-        self.run_id = run_id
-        self.model = model or config.EXTRACTOR_MODEL 
-        self.facts: Dict[str, Any] = {}
+    def detect_input_type(self) -> str:
+        if not self.input_file.exists():
+            raise FileNotFoundError(f"Target file not found in vault: {self.input_file}")
+        
+        suffix = self.input_file.suffix.lower()
+        if suffix == ".csv":
+            return "csv"
+        return "text"
 
-    def extract_all_facts(self, human_insight: str = "") -> Dict[str, Any]:
-        """Extracts facts with robust JSON unwrapping logic."""
+    def run(self) -> bool:
+        """Executes the synchronized Semantic + RAG investigation workflow."""
+        logger.info("="*60)
+        logger.info(f"SOC INVESTIGATION START | ID: {self.run_id}")
+        logger.info(f"INPUT SOURCE: {self.input_file.name}")
+        logger.info("="*60)
         
-        raw_evidence = " ".join(self.df['Full_Evidence'].astype(str).head(10).tolist())
-        
-        # IMPROVEMENT 1: Explicit Schema Instructions
-        # We tell the AI exactly what keys we need.
-        json_structure = IncidentSchema.model_json_schema()
-        
-        prompt = f"""
-        Analyze these security logs and extract facts into the following JSON format.
-        
-        REQUIRED SCHEMA:
-        {json.dumps(json_structure['properties'], indent=2)}
-
-        LOG DATA:
-        {raw_evidence}
-        
-        ANALYST INSIGHT:
-        {human_insight}
-        
-        INSTRUCTIONS:
-        1. Return ONLY the JSON object.
-        2. Do NOT wrap the JSON in any top-level keys like 'analysis' or 'incident'.
-        3. Identify if this is a network attack or a misconfiguration.
-        4. Generate a 'mitre_query' for RAG search.
-        """
-
         try:
-            response = ollama.chat(
-                model=self.model,
-                messages=[{'role': 'user', 'content': prompt}],
-                format='json',
-                keep_alive=config.KEEP_ALIVE, 
-                options={
-                    "num_ctx": config.NUM_CTX, 
-                    "temperature": 0.0 # Lower temperature for stricter JSON
-                }
-            )
+            input_type = self.detect_input_type()
             
-            raw_content = response['message']['content']
-            extracted_json = json.loads(raw_content)
-            
-            # IMPROVEMENT 2: Smart Unwrapping
-            # If the AI ignores instructions and wraps the JSON, we "unwrap" it.
-            if len(extracted_json) == 1 and isinstance(list(extracted_json.values())[0], dict):
-                key = list(extracted_json.keys())[0]
-                logger.warning(f"⚠️ AI wrapped JSON in '{key}' key. Auto-unwrapping...")
-                extracted_json = extracted_json[key]
-            
-            # Validate with Pydantic
-            validated_data = IncidentSchema(**extracted_json)
-            
-            self.facts = {
-                "METADATA": {
-                    "run_id": self.run_id,
-                    "timestamp": datetime.now().isoformat(),
-                    "total_records": len(self.df)
-                },
-                "FINDINGS": validated_data.model_dump() # Pydantic v2 standard
-            }
-            
-            logger.info(f"✓ Semantic Extraction Complete. Model flushed.")
-            return self.facts
+            # PHASE 1: Unified Semantic Extraction 
+            # We turn ANY input into a JSON 'Truth Block' first.
+            if input_type == "csv":
+                logger.info("📊 Processing Log Evidence (CSV)...")
+                json_vault_path = self._extract_from_csv()
+            else:
+                logger.info("📝 Processing Narrative Evidence (TXT)...")
+                json_vault_path = self._extract_from_text()
 
-        except ValidationError as ve:
-            logger.error(f"❌ Schema Validation Error: {ve}")
-            return {"error": "AI returned JSON, but it didn't match the required SOC schema."}
+            # --- PHASE 1 GATEKEEPER ---
+            if not json_vault_path:
+                logger.error("❌ Pipeline Halted: Phase 1 failed to produce a Truth Block.")
+                return False
+
+            with open(json_vault_path, 'r') as f:
+                truth_block = json.load(f)
+            
+            if "error" in truth_block or "FINDINGS" not in truth_block:
+                reason = truth_block.get("error", "Unknown extraction failure")
+                logger.error(f"❌ Pipeline Halted: Extraction data invalid. Reason: {reason}")
+                return False
+
+            # PHASE 2: Intelligence Retrieval (RAG)
+            # Uses the 'mitre_query' generated by Qwen in Phase 1
+            rag_context = self._get_rag_context(truth_block)
+
+            # PHASE 3: Lead-Level AI Synthesis (DeepSeek-R1)
+            logger.info("PHASE 3: Generating Final Report via DeepSeek-R1")
+            return self._trigger_generator(json_vault_path, rag_context)
+
         except Exception as e:
-            logger.error(f"❌ Semantic Extraction Failed: {e}")
-            return {"error": f"Critical extraction failure: {str(e)}"}
+            logger.error(f"PIPELINE CRASHED: {e}")
+            return False
 
-    def export_vault(self, output_path: Path):
-        with open(output_path, 'w') as f:
-            json.dump(self.facts, f, indent=4)
-        logger.info(f"Forensic JSON vaulted to: {output_path}")
+    def _extract_from_csv(self) -> Optional[str]:
+        """Handles Raw CSV -> Cleaning -> JSON Truth Block."""
+        try:
+            converter = CSVToIncidentConverter(
+                csv_file=str(self.input_file),
+                human_insight=self.human_insight,
+                run_id=self.run_id 
+            )
+            return converter.convert()
+        except Exception as e:
+            logger.error(f"CSV Workflow Failed: {e}")
+            return None
+
+    def _extract_from_text(self) -> Optional[str]:
+        """Handles Raw Text -> Qwen -> JSON Truth Block."""
+        try:
+            with open(self.input_file, 'r', encoding='utf-8') as f:
+                raw_text = f.read()
+
+            # Wrap text in a dummy DataFrame for the Extractor
+            df = pd.DataFrame({'Full_Evidence': [raw_text]})
+            extractor = SemanticExtractor(df, run_id=self.run_id)
+            
+            facts = extractor.extract_all_facts(human_insight=self.human_insight)
+            
+            if "error" in facts:
+                return None
+
+            output_path = config.OUTPUT_DIR / f"truth_block_{self.run_id}.json"
+            extractor.export_vault(output_path)
+            return str(output_path)
+        except Exception as e:
+            logger.error(f"Text Extraction Failed: {e}")
+            return None
+
+    def _get_rag_context(self, truth_block: dict) -> str:
+        """Performs the RAG search using extracted findings."""
+        findings = truth_block.get("FINDINGS", {})
+        search_query = findings.get("mitre_query", "security incident")
+        
+        logger.info(f"PHASE 2: Querying Knowledge Base for: '{search_query}'")
+        return fetch_expert_context(search_query)
+
+    def _trigger_generator(self, incident_path: str, rag_context: str) -> bool:
+        """Triggers the reasoning engine with synchronized context."""
+        try:
+            generator = IncidentReportGenerator()
+            return generator.generate_report(
+                incident_path=incident_path, 
+                rag_context=rag_context, 
+                run_id=self.run_id
+            )
+        except Exception as e:
+            logger.error(f"AI Generation Failed: {e}")
+            return False
+
+def main():
+    parser = argparse.ArgumentParser(description="SOC Agent - GPU Semantic Pipeline")
+    parser.add_argument("input_file", help="Path to logs (CSV) or Incident text (TXT)")
+    parser.add_argument("--insight", default="", help="Analyst's primary investigative truth")
+    
+    args = parser.parse_args()
+    
+    pipeline = UnifiedPipeline(
+        input_file=args.input_file,
+        human_insight=args.insight
+    )
+    
+    success = pipeline.run()
+    sys.exit(0 if success else 1)
+
+if __name__ == "__main__":
+    main()
