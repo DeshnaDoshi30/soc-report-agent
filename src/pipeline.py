@@ -8,10 +8,10 @@ from typing import Optional
 
 # Centralized SOC Config & New RAG Modules
 try:
-    import config
-    from csv_to_incident import CSVToIncidentConverter
-    from knowledge_base import fetch_expert_context  # NEW RAG BRIDGE
-    from report_generator import IncidentReportGenerator
+    from src import config
+    from src.csv_to_incident import CSVToIncidentConverter
+    from src.knowledge_base import fetch_expert_context  # NEW RAG BRIDGE
+    from src.report_generator import IncidentReportGenerator
 except ImportError as e:
     print(f"CRITICAL ERROR: Project structure invalid or missing dependencies: {e}")
     sys.exit(1)

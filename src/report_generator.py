@@ -3,7 +3,7 @@ import logging
 import ollama  
 from pathlib import Path
 from typing import Optional
-import src.config as config # Ensure correct import path
+from src import config
 from src.report_validator import HallucinationDetector
 
 # Setup professional logging

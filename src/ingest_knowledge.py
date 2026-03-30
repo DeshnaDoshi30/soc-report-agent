@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader, TextLoader
+from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader, DirectoryLoader
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -25,19 +25,17 @@ def build_knowledge_base():
 
     logger.info(f"🚀 Starting RAG Ingestion from: {KNOWLEDGE_DIR}")
 
-    # 1. LOAD PDFs ONLY
-    pdf_loader = DirectoryLoader(
+    # 1. LOAD PDFs ONLY (Using the dedicated class)
+    pdf_loader = PyPDFDirectoryLoader(
         str(KNOWLEDGE_DIR), 
-        glob="**/*.pdf",  # <--- Strictly only PDFs
-        loader_cls=PyPDFLoader,
-        show_progress=True
+        glob="**/*.pdf"
     )
-    
-    # 2. LOAD TEXT FILES (Like your compliance_standards.txt)
+
+    # 2. LOAD TEXT FILES (Use 'cast' here to silence the generic loader error)
     text_loader = DirectoryLoader(
         str(KNOWLEDGE_DIR), 
-        glob="**/*.txt",  # <--- Strictly only TXT
-        loader_cls=TextLoader
+        glob="**/*.txt",
+        loader_cls=cast(Type[TextLoader], TextLoader) # Tell the type checker it's okay
     )
 
     try:

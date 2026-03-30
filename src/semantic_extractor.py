@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
-import src.config as config # Import your updated 3-GPU config
+from src import config
 
 # Setup professional logging
 logger = logging.getLogger(__name__)

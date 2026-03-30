@@ -1,9 +1,9 @@
 import logging
 from pathlib import Path
 from typing import Optional
-import config
-from processor import SOCDataCleaner
-from semantic_extractor import SemanticExtractor  # Upgraded from ForensicExtractor
+from src import config
+from src.processor import SOCDataCleaner
+from src.semantic_extractor import SemanticExtractor 
 
 # Professional logging setup
 logger = logging.getLogger(__name__)
