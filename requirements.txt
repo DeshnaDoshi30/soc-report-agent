@@ -4,6 +4,7 @@ ollama
 python-dotenv
 requests
 pydantic>=2.0.0
+python-docx
 
 # --- LangChain 2026 Orchestration ---
 langchain

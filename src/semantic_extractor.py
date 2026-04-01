@@ -66,8 +66,10 @@ class SemanticExtractor:
                 format='json',
                 keep_alive=config.KEEP_ALIVE, 
                 options={
-                    "num_ctx": config.NUM_CTX, 
-                    "temperature": 0.0 
+                    "num_ctx": 2048, 
+                    "num_predict": 512,        # We only need a short JSON block, not 2k tokens
+                    "temperature": 0.0,
+                    "num_batch": 128 
                 }
             )
             

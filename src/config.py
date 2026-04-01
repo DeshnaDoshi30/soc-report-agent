@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load local environment variables if present
+# Load local environment variables
 load_dotenv()
 
 # --- OS-AGNOSTIC PATHING ---
@@ -22,32 +22,30 @@ for folder in [INPUT_DIR, OUTPUT_DIR, SAVED_DIR, TEMPLATES_DIR, VECTOR_DB_DIR]:
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
 # 1. Extractor: Qwen (Uses ~5GB VRAM)
-EXTRACTOR_MODEL = os.getenv("EXTRACTOR_MODEL", "qwen2.5:7b")
-if not EXTRACTOR_MODEL:
-    EXTRACTOR_MODEL = "qwen2.5:7b"
+EXTRACTOR_MODEL = "qwen2.5:7b" 
 
 # 2. Embedder: Nomic (Uses <1GB VRAM)
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
-if not EMBEDDING_MODEL:
-    EMBEDDING_MODEL = "nomic-embed-text"
+EMBEDDING_MODEL = "nomic-embed-text"
 
-# 3. Writer: DeepSeek-R1 (Uses ~19GB VRAM)
-# Note: 32B fits in 24GB, but only if Qwen is flushed out first!
-REPORT_MODEL = os.getenv("REPORT_MODEL", "deepseek-r1:32b")
-if not REPORT_MODEL:
-    REPORT_MODEL = "deepseek-r1:32b"
+# 3. Reporter: DeepSeek-R1-14B (Optimized for 10-Series Bandwidth)
+# 14B Distilled provides the best 'Reasoning-to-Speed' ratio for 3x 1070s.
+REPORT_MODEL = "deepseek-r1:14b"
 
-# --- SEQUENTIAL PROCESSING SETTINGS ---
-# '0' tells Ollama to UNLOAD the model from GPUs immediately after use.
-# This makes room for the next model so they don't fight for VRAM.
+# --- SEQUENTIAL VRAM MANAGEMENT ---
+# '0' ensures that models are flushed immediately. 
+# This prevents OOM errors when switching from Qwen to DeepSeek.
 KEEP_ALIVE = 0 
 
-# --- PERFORMANCE & VERBOSITY ---
-REQUEST_TIMEOUT = 900  # Increased to 15 mins for longer generation
-NUM_CTX = 16384        # Keep at 16k
-NUM_PREDICT = 8192     # <--- ADDED: This is the max tokens the model can output
-REPORT_TEMP = 0.7      # <--- ADDED: Higher temp for more descriptive, elaborate language
-REPEAT_PENALTY = 1.1   # <--- ADDED: Prevents the model from repeating itself in long reports
+# --- INFERENCE PARAMETERS (5-PAGE TARGET) ---
+REQUEST_TIMEOUT = 900  
+NUM_CTX = 8192         # Sufficient for RAG + JSON context window
+NUM_PREDICT = 2048     # Allowed output PER PHASE (Total ~6k tokens)
+REPORT_TEMP = 0.6      # Slightly increased for more descriptive 'iSecurify' tone
+REPEAT_PENALTY = 1.15  # Prevents repetitive technical loops
 
-# --- FORENSIC VAULT ---
-REPORT_TEMPLATE = TEMPLATES_DIR / "report_format.txt"
+# --- PHASED TEMPLATE ARCHITECTURE ---
+# Replaced 'report_format.txt' with the new modular suite
+GLOBAL_HEADER = TEMPLATES_DIR / "global_header.txt"
+PHASE_A = TEMPLATES_DIR / "phase_a.txt"
+PHASE_B = TEMPLATES_DIR / "phase_b.txt"
+PHASE_C = TEMPLATES_DIR / "phase_c.txt"

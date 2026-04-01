@@ -1,0 +1,19 @@
+### SECTIONAL OBJECTIVE:
+Generate Section 6 (Response Actions), Section 7 (Root Cause Analysis), Section 8 (Lessons Learned), Section 9 (Recommendations), and Section 10 (Conclusion).
+
+### INSTRUCTIONS:
+- **Section 6: Response Actions**: 
+    - Document the immediate containment measures and evidence preservation steps taken by the SOC.
+    - Explicitly address any "Limitations Encountered" (e.g., lack of session-level command history or automated blocking impediments due to load balancer architecture).
+- **Section 7: Root Cause Analysis**: 
+    - Identify the primary cause (e.g., mismanaged permissions or development tools in production).
+    - Detail the "Contributing Factors," such as the absence of enforced configuration baselines or insufficient segregation of duties.
+- **Section 8: Lessons Learned**: 
+    - Provide a high-level discourse on the systemic risks identified (e.g., "Insecure File Permissions Can Introduce Systemic Risk").
+- **Section 9: Recommendations**: 
+    - Provide a structured list of hardening steps. Use the STRATEGIC RAG context to suggest "Best-in-Class" controls like IaC tools (Ansible/Puppet), mandatory access controls (SELinux), or Cloudflare WAF hardening .
+- **Section 10: Conclusion**: 
+    - Finalize the report by summarizing the verdict on threat status and the importance of ongoing configuration governance.
+
+### NARRATIVE DEPTH TRIGGER:
+Utilize the iSecurify Voice to bridge these sections. For Section 9, do not just list steps; explain the strategic "Why" behind them. If the RAG context mentions institutional gaps (like the DigitalOcean load balancer issues), weave those into the Root Cause and Recommendations to ensure the report feels custom-tailored to the client's specific architecture.

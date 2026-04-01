@@ -1,0 +1,10 @@
+### SECTIONAL OBJECTIVE:
+Generate Section 1 (Executive Summary), Section 2 (Introduction), and Section 3 (Incident Details) as a cohesive, professional opening for the SOC Investigation Report.
+
+### INSTRUCTIONS:
+- **Section 1: Executive Summary**: Construct a high-level briefing for management. Discuss the "Persistent Nature" of the threat if detected across multiple timestamps. [cite_start]Anchor the summary on the "What" (the misconfiguration or alert), the "So What" (the business risk), and the "Now What" (the fact that SOC is investigating).
+- **Section 2: Introduction**: Define the investigation's objective: To validate the detected condition, assess associated security and operational risks, and document findings to align the environment with ISO/IEC 27001 and PCI DSS standards. Elaborate on why the detected category (e.g., world-writable permissions or exposed debug interfaces) violates fundamental security requirements.
+- **Section 3: Incident Details**: Present a structured technical table for "Affected System" data. [cite_start]Use narrative paragraphs to describe the "Primary Detection Indicators" (e.g., FIM alerts or Rootcheck triggers) and document the "Initial Actions Taken" by the SOC to preserve evidence.
+
+### NARRATIVE DEPTH TRIGGER:
+Avoid simple completion. If the incident involves a Symfony API server or specific Linux hardening gaps found in the knowledge base, weave those architectural details into the Introduction to set a sophisticated, "Lead-Level" tone.

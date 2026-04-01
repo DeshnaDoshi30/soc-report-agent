@@ -1,0 +1,18 @@
+### SECTIONAL OBJECTIVE:
+Generate Section 4 (Investigation and Findings) and Section 5 (Impact Assessment). This phase is the technical heart of the iSecurify report and must prioritize "Forensic Dimensionality" and evidence correlation.
+
+### INSTRUCTIONS:
+- **Section 4: Investigation and Findings**:
+    - Describe the multi-stage analysis of {{detection_source}} outputs (e.g., iSIEM Rootcheck or FIM).
+    - For every technical indicator in the JSON (IPs, Paths), provide a "Technical Observation" narrative. Discuss the risk of lateral movement or unauthorized data access associated with these specific artifacts.
+    - Conclude with an "Evidence Correlation Summary" that confirms the persistence and alignment of metadata (paths, ownership, timestamps) across all reviewed artifacts.
+
+- **Section 5: Impact Assessment**:
+    - Perform a formal CIA Triad analysis (Confidentiality, Integrity, Availability).
+    - **Confidentiality**: Assess the risk of information disclosure based on the exposure type.
+    - **Integrity**: Analyze how world-writable permissions (777) or debug interfaces weaken access control and threaten database/application logic.
+    - **Availability**: Document any service disruption or resource consumption issues (e.g., increased system load from malicious hits).
+    - Reference specific compliance standards like ISO/IEC 27001 or PCI DSS to justify the impact severity.
+
+### NARRATIVE DEPTH TRIGGER:
+Do not summarize findings. Use the "iSecurify Voice" to weave the RAG-provided historical context (e.g., past SSH patterns or load balancer limitations) into the Technical Observations. If the JSON mentions "777" permissions, provide a discourse on the systemic risk of permission inheritance in production Linux environments.
