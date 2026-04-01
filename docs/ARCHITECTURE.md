@@ -1,15 +1,15 @@
-# 🛡️ Architecture & Data Flow (v2026 - Semantic RAG Edition)
+# 🛡️ Architecture & Data Flow (v2026 - Phased RAG Edition)
 
-## 1. The Evolutionary Leap: From Keywords to Reasoning
-The previous iteration relied on static regex signatures and limited context, often missing the "story" within the logs. The v2026 architecture introduces **Semantic Intelligence** and **Historical Experience**.
-* **Beyond Regex**: Replaced rigid keyword matching with a **Semantic Extractor** (Qwen-7B) that understands intent.
-* **Knowledge Retrieval (RAG)**: The agent no longer works in a vacuum. It queries a local **ChromaDB** "memory" of 30+ historical reports to match company style and remediation standards.
-* **Deep Reasoning**: Utilizes **DeepSeek-R1 (32B)** to perform "Chain-of-Thought" analysis, providing the "Why" behind security risks rather than just the "What".
+## 1. The Evolutionary Leap: Phased Reasoning
+The v2026 architecture introduces **Phased Narrative Generation** to overcome the bandwidth limitations of 10-series hardware. Instead of a single-shot generation, the agent writes the report in three distinct "Acts" (A, B, and C).
+* **Beyond Regex**: Replaced rigid keyword matching with a **Semantic Extractor** (Qwen-7B) that understands forensic intent.
+* **Knowledge Retrieval (RAG)**: Queries a local **ChromaDB** to inject historical company expertise and hardening standards into every section.
+* **Tier 3 Depth**: Utilizes **DeepSeek-R1 (14B)** to perform forensic analysis across 4-5 pages, providing the "Why" behind security risks.
 
 ## 2. The Tier 3 Forensic Vault (JSON-Native)
-We have upgraded the "Truth Block" from a flat text file to a structured **JSON Schema**. This ensures 100% data integrity throughout the multi-stage pipeline.
-* **JSON Truth Block**: Acts as the immutable forensic anchor. Every IP, path, and permission is validated before the report is written.
-* **Non-Repudiation**: Every run generates a unique **Run ID**, archiving the raw logs, the extracted JSON, and the final narrative in a synchronized vault.
+The **JSON Truth Block** serves as the immutable anchor for the entire investigation.
+* **Forensic Anchor**: Every IP, timestamp, and technical finding is validated against a structured schema before any narrative is generated.
+* **Non-Repudiation**: Unique **Run IDs** synchronize raw logs, the JSON Truth Block, and the final iSecurify-branded Word document for full auditability.
 
 ---
 
@@ -17,51 +17,53 @@ We have upgraded the "Truth Block" from a flat text file to a structured **JSON 
 
 | Module | Forensic Role | Intelligence Layer |
 | :--- | :--- | :--- |
-| **`semantic_extractor.py`** | **The Fact-Finder**: Turns raw logs into a structured JSON "Truth Block." | **Qwen 2.5 (7B)** |
-| **`knowledge_base.py`** | **The Librarian**: Fetches relevant past incidents and MITRE techniques (RAG). | **Nomic Embed Text** |
-| **`report_generator.py`** | **The Lead Investigator**: Synthesizes facts and experience into a narrative. | **DeepSeek-R1 (32B)** |
-| **`report_validator.py`** | **The Internal Auditor**: Cross-references the narrative against the JSON Truth. | **Pydantic/Regex** |
-| **`ingest_knowledge.py`** | **The Archivist**: Indexes historical company reports into ChromaDB. | **Vector Logic** |
+| **`semantic_extractor.py`** | **The Fact-Finder**: Converts raw evidence into the JSON Truth Block. | **Qwen 2.5 (7B)** |
+| **`knowledge_base.py`** | **The Librarian**: Performs semantic RAG searches for context injection. | **Nomic Embed Text** |
+| **`report_generator.py`** | **The Lead Investigator**: Executes phased narrative synthesis (Acts A, B, C). | **DeepSeek-R1 (14B)** |
+| **`docx_exporter.py`** | **The Publisher**: Generates corporate blue iSecurify Word reports. | **python-docx** |
 
 ---
 
-## 4. Advanced Data Flow (The Intelligence Loop)
+## 4. Advanced Data Flow (The Sequential Pipeline)
 
-### Path: Raw Log to Executive Intelligence
+### Path: Raw Log to Professional Word Export
 ```text
 Raw Logs (CSV) + Human Insight (CLI)
       ↓
 [processor.py] -> Normalizes Wazuh/SonicWall logs (Memory Optimized)
       ↓
-[semantic_extractor.py] -> (GPU 1) Reasons through 'Full_Evidence' to produce JSON
+[semantic_extractor.py] -> (GPU 0) Reasons through evidence to produce JSON Truth
       ↓
-[incident_ID.json] -> THE TRUTH BLOCK (Immutable Facts)
+[TRUTH BLOCK] -> Immutable Forensic Data (VRAM FLUSH: KEEP_ALIVE=0)
       ↓
-[knowledge_base.py] -> (GPU 1/2) Searches ChromaDB for "Similar Past Incidents"
+[knowledge_base.py] -> (GPU 1) Searches ChromaDB for "Similar Past Incidents"
       ↓
-[report_generator.py] -> (GPU 3/4) Synthesis: DeepSeek-R1 (JSON + RAG + Prompt)
+[report_generator.py] -> (GPU 0-2) Phased Synthesis (A -> B -> C)
+      ├─ PHASE A: Executive Brief
+      ├─ PHASE B: Forensic Deep-Dive
+      └─ PHASE C: Strategic Resolution
       ↓
-[report_validator.py] -> Automated JSON-Native Audit (Fabrication Check)
+[docx_exporter.py] -> Finalizes Professional iSecurify Report (Blue Accents)
       ↓
 OUTPUT VAULT (data/output/)
-├─ incident_20260320.json      (The Forensic Evidence)
-├─ incident_report_20260320.md (The Tier 3 Narrative Report)
-└─ validation_20260320.txt     (The Auditor's Verdict)
+├─ truth_block_ID.json   (The Evidence)
+├─ incident_report_ID.md (The Raw Narrative)
+└─ SOC_Report_ID.docx    (The Client-Ready Document)
 ```
 
 ---
 
-## 5. Hardware Optimization (32GB VRAM Architecture)
-Designed for high-performance Ubuntu servers with **4x 8GB GPUs**, the system enforces:
-* **Layer Distribution**: Offloads the 64+ layers of DeepSeek-R1 across all 4 GPUs to prevent system RAM bottlenecks.
-* **Expanded Context (32k)**: The `NUM_CTX` is set to 32,768, allowing the agent to simultaneously "read" multiple past reports and thousands of log entries.
-* **Flash Attention**: Enabled to accelerate inference and reduce the VRAM footprint of the 32B model.
-* **Model Residency**: `OLLAMA_MAX_LOADED_MODELS=3` ensures all agents (Qwen, Nomic, DeepSeek) stay in VRAM for zero-latency switching.
+## 5. Hardware Optimization (24GB VRAM Architecture)
+Specifically engineered for **3x 8GB GTX 1070s**, the system enforces:
+* **Sequential Actuation**: `KEEP_ALIVE=0` ensures the Extractor (Qwen) is fully flushed before the Reporter (DeepSeek) loads, preventing OOM crashes.
+* **Phased VRAM Flushing**: Memory is cleared between report acts (A, B, and C) to prevent fragmentation and allow for high-density reasoning.
+* **Context Slicing**: `NUM_CTX=8192` combined with the `_trim_json_for_phase` helper maximizes model attention on critical forensic data.
+* **Layer Distribution**: Ollama automatically splits the 14B model weights across all 3 GPUs to maintain stability.
 
 ---
 
 ## 6. Key Scientific Improvements
-* ✅ **Semantic Consistency**: RAG ensures reports align with company history.
-* ✅ **Reasoning Depth**: DeepSeek-R1 provides Tier 3 professional analysis.
-* ✅ **Validation Rigor**: JSON-native auditing eliminates false-positive hallucination flags.
-* ✅ **Future Proof**: The modular "Agent" structure allows for swapping models (e.g., Llama 4 or DeepSeek-V3) by editing a single `.env` variable.
+* ✅ **VRAM Efficiency**: Phased logic allows 14B models to run on 8GB cards without quality loss.
+* ✅ **Narrative Depth**: Act-based generation consistently achieves 4-5 page report length.
+* ✅ **Corporate Compliance**: Automated Docx styling matches the 2026 iSecurify blue-accent standards.
+* ✅ **Truth Grounding**: JSON-native anchoring eliminates AI hallucinations in forensic sections.

@@ -1,35 +1,36 @@
-# 🚀 QUICKSTART - Semantic RAG & Forensic Vault
+# 🚀 QUICKSTART - Phased RAG & Forensic Vault
 
 ## 🏗️ Phase 1: One-Time "Brain" Initialization
 Before your first investigation, you must build your local knowledge base from your 30+ historical reports.
-1. `cd scripts`
-2. `./pull_model.sh --setup-all` (Downloads Qwen, Nomic, and DeepSeek-R1)
-3. `python3 ../src/ingest_knowledge.py` (Indexes your company expertise into ChromaDB)
+1. `ollama pull deepseek-r1:14b` (Optimized reasoning model for 10-series GPUs).
+2. `ollama pull qwen2.5:7b` (High-speed forensic extractor).
+3. `python3 src/ingest_knowledge.py` (Indexes your company expertise into ChromaDB).
 
 ## ⚡ Phase 2: The Investigation Loop
-Follow this path for daily log analysis on your **4x 8GB GPU** stack.
+Follow this path for daily log analysis on your **3x 8GB GPU** stack.
 
 ### Path A: Raw Log Analysis (CSV)
-1. `./start_ollama.sh` (Ignites the multi-GPU service)
-2. `./report.sh logs.csv --insight "Analyst Note: Possible lateral movement to API backend."`
+1. `export OLLAMA_KEEP_ALIVE=0` (Enables sequential VRAM flushing between acts).
+2. `python3 pipeline.py logs.csv --insight "Unauthorized SSH login attempts on 111.90.173.220"`.
 
-### Path B: Knowledge-Only Synthesis (TXT/JSON)
+### Path B: Knowledge-Only Synthesis (JSON)
 Ideal for re-running reports using existing forensic truth blocks.
-1. `./report.sh incident_20260320_1527.json`
+1. `python3 pipeline.py data/output/truth_block_20260320_1527.json`.
 
 ---
 
 ## 📂 The "Forensic Vault" Results
 Every run creates a synchronized set of files linked by a unique **Run ID**. Your data is **never overwritten**:
-* **`incident_[ID].json`**: The Semantic Truth Block (Verified Facts).
-* **`incident_report_[ID].md`**: The Long-Form Narrative AI Report (DeepSeek-R1).
-* **`validation_[ID].txt`**: The JSON-Native Hallucination Audit.
+* **`SOC_Report_[ID].docx`**: The professional **iSecurify Word Document** with corporate branding.
+* **`truth_block_[ID].json`**: The **Semantic Truth Block** (The immutable forensic anchor).
+* **`incident_report_[ID].md`**: The Phased Narrative AI Report across **Acts A, B, and C**.
+* **`validation_[ID].txt`**: The Forensic Accuracy Audit.
 
 ---
 
 ## 🛠️ Expert Power Features
-* **Semantic Memory**: The agent automatically searches your past reports to match your company's professional tone.
+* **Phased Generation**: The system writes the report in three acts to achieve **5-page depth** without hitting 10-series VRAM limits.
+* **Semantic Memory**: The agent automatically searches your past reports to match iSecurify's professional tone.
 * **Human-in-the-Loop**: Use the `--insight` flag to ensure your expert conclusions override machine logic.
-* **GPU Orchestration**: The system automatically distributes the **32B model** across your 4 GPUs for maximum reasoning speed.
+* **GPU Orchestration**: The system automatically distributes the **14B model** across your 3 GPUs for maximum reasoning speed.
 * **Diagnostic Check**: If something feels off, run `python3 scripts/verify_setup.py`.
-

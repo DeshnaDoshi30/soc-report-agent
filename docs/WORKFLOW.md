@@ -1,49 +1,50 @@
-# 🛡️ SOC Agent v2026: Pro RAG Workflow (Ubuntu GPU)
+# 🛡️ SOC Agent v2026: Phased RAG Workflow (3x GTX 1070)
 
 ## 1. The "Launch Sequence"
-Run these at the start of your shift to warm up the **4x 8GB GPU** stack.
+Run these at the start of your shift to optimize the **3x 8GB GPU** (24GB total) stack.
 
-### Step 1: Ignite the Multi-GPU Engine
+### Step 1: Ignite the Sequential Engine
 ```bash
-./scripts/start_ollama.sh
-```
-> **What’s happening**: This balances the **32B DeepSeek-R1** layers across all 4 GPUs and keeps the **Qwen Extractor** and **Nomic Embedder** resident in VRAM.
+# Enable persistence mode to stabilize Pascal architecture
+sudo nvidia-smi -pm 1
 
-### Step 2: Sync the Librarian (If reports were added)
+# Set global flush to clear VRAM between investigation acts
+export OLLAMA_KEEP_ALIVE=0
+ollama serve
+```
+> **What’s happening**: This configures Ollama to split the **14B DeepSeek-R1** layers across all three GPUs while ensuring a total VRAM flush after each phased act (A, B, and C) to prevent memory fragmentation.
+
+### Step 2: Sync the Librarian
 ```bash
 python3 src/ingest_knowledge.py
 ```
-> **What’s happening**: This updates your "Semantic Memory" (ChromaDB) with any new company reports or compliance standards.
+> **What’s happening**: This updates your **ChromaDB** "Semantic Memory" with your 30+ historical iSecurify reports to ensure the AI matches the company's "voice" and remediation standards.
 
 ---
 
 ## 2. The Investigation Workflow
-The pipeline now intelligently handles the "thinking" for you.
+The pipeline uses **Phased Reasoning** to achieve 5-page report depth without hitting 10-series bandwidth bottlenecks.
 
-### Step 3: Run the Multi-Agent Pipeline
-The universal `report.sh` now triggers a three-agent handoff: **Extractor → Librarian → Lead Investigator**.
-
-**The "Standard" Narrative (Logs only)**
-```bash
-./scripts/report.sh logs.csv
-```
+### Step 3: Run the Unified Pipeline
+The `pipeline.py` master orchestrator triggers a synchronized four-agent handoff: **Cleaner → Extractor → Librarian → Phased Reporter**.
 
 **The "Tier 3" Investigation (Human + RAG)**
-*This is the recommended path for executive-level reporting.*
+*This is the recommended path for executive-level iSecurify Word output.*
 ```bash
-./scripts/report.sh logs.csv --insight "Evidence of SQL injection attempts on API v2."
+python3 pipeline.py logs.csv --insight "Unauthorized SSH login attempts on 111.90.173.220"
 ```
 
 ---
 
 ## 3. The Forensic Vault (Synchronized Results)
-Results are saved in `data/output/` and share a synchronized **Run ID**. Every investigation is a "Case File":
+Results are saved in `data/output/` and share a synchronized **Run ID**. Every investigation is a complete "Forensic Case File":
 
 | File | Forensic Role |
 | :--- | :--- |
-| **`incident_[ID].json`** | The **Semantic Truth Block**. The authoritative anchor of all facts. |
-| **`incident_report_[ID].md`** | The **Narrative Report**. Fuses log data with historical company experience. |
-| **`validation_[ID].txt`** | The **Forensic Audit**. Proves the narrative matches the JSON truth. |
+| **`truth_block_[ID].json`** | The **Forensic Anchor**. Structured JSON data containing all IPs, paths, and validated facts. |
+| **`SOC_Report_[ID].docx`** | The **Executive Export**. Professional Word document with iSecurify blue styling and cover page. |
+| **`incident_report_[ID].md`** | The **Phased Narrative**. Raw DeepSeek-R1 reasoning script across Acts A, B, and C. |
+| **`validation_[ID].txt`** | The **Forensic Audit**. Proves the narrative matches the original JSON truth. |
 
 ---
 
@@ -51,18 +52,18 @@ Results are saved in `data/output/` and share a synchronized **Run ID**. Every i
 
 | Action | Command |
 | :--- | :--- |
-| **Full Stack Check** | `python3 scripts/verify_setup.py` |
-| **Pull GPU Models** | `./scripts/pull_model.sh --setup-all` |
-| **Monitor VRAM** | `nvidia-smi` (Run in a separate terminal) |
-| **View AI "Thinking"** | `tail -f data/ollama_server.log` |
+| **Hardware Health** | `nvidia-smi` (Monitor VRAM distribution across the 3 cards) |
+| **Pull 14B Model** | `ollama pull deepseek-r1:14b` |
+| **Verify RAG Memory** | `python3 scripts/verify_setup.py` |
+| **Persistence Reset** | `sudo nvidia-smi -r` (If a GPU "falls off the bus") |
 
 ---
 
-## 5. Pro Optimization (32GB VRAM Tips)
+## 5. Pro Optimization (24GB VRAM Tips)
 
 > [!IMPORTANT]
-> **Semantic Memory**: If your report doesn't sound like "you," ensure you've run `ingest_knowledge.py`. The agent relies on your historical reports to match the company's voice.
+> **Sequential Flushing**: On 10-series cards, VRAM bandwidth is the bottleneck. By using `KEEP_ALIVE=0`, we ensure Act B (Forensics) has full access to GPU memory without "leftovers" from Act A slowing down inference.
 
-* **Context Window**: The server is set to **32,768 tokens**. This allows you to process entire log files in one go without the AI "forgetting" the beginning of the file.
-* **VRAM Spills**: If you see `nvidia-smi` showing nearly 32GB used, that's perfect. It means the models are fully resident in the GPUs for maximum speed.
-* **Audit High-Severity**: If the validation log shows high-severity flags, the AI may have tried to "fill in the gaps" where logs were missing. Ground it by adding more detail to your `--insight`.
+* **Context Window (NUM_CTX)**: Optimized at **8,192 tokens**. This is the "Sweet Spot" for your 24GB capacity—sufficient for deep RAG injection without risking OOM crashes.
+* **iSecurify Branding**: Ensure the `hostname` is present in your logs; `pipeline.py` extracts this for the **SOCDocxExporter** to populate the professional cover page.
+* **Power Stability**: Monitor the **TDP** (Power Usage) in `nvidia-smi`. If inference causes a card to disconnect, ensure each 1070 has a **dedicated power rail** from your PSU rather than a shared pigtail cable.

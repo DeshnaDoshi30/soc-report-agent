@@ -1,59 +1,59 @@
-# 🛡️ SOC Agent v2026: Pro GPU & RAG Startup Guide
+# 🛡️ SOC Agent v2026: 3x GTX 1070 & RAG Startup Guide
 
 ## 1. High-Performance Start (Ubuntu Server)
 
 ### Step 1: Ignite the GPU Stack
-This command optimizes Ollama for your **4x 8GB GPU** environment, ensuring the 32B model is distributed correctly:
+This command optimizes Ollama for your **3x 8GB Pascal** environment. Since 10-series cards do not natively support Flash Attention 2, we focus on layer splitting and sequential VRAM management:
 ```bash
-./scripts/start_ollama.sh
+# Set OLLAMA_KEEP_ALIVE=0 to ensure sequential VRAM flushing between acts
+# Layer splitting is handled automatically across your 3x 1070s
+export OLLAMA_KEEP_ALIVE=0
+ollama serve
 ```
-* **What it does**: Sets VRAM residency for 3 models and enables **Flash Attention** for 32k context reasoning.
+* **What it does**: Clears the VRAM immediately after each phase (A, B, or C) to prevent memory fragmentation on your 8GB cards.
 
 ### Step 2: Build the Brain (RAG Ingestion)
-If you've updated your historical reports or it's your first time on the server:
 ```bash
 python3 src/ingest_knowledge.py
 ```
-* **What it does**: Indexes your 30+ company reports into the local **ChromaDB** vector vault.
+* **What it does**: Indexes your forensic reports into **ChromaDB**. This uses the **Nomic Embed** model, which fits easily (<1GB) on any of your three GPUs.
 
 ### Step 3: Run the Multi-Agent Pipeline
 ```bash
-./scripts/report.sh logs.csv --insight "Suspected unauthorized lateral movement."
+python3 pipeline.py logs.csv --insight "Unauthorized SSH attempts on 111.90.173.220"
 ```
-* **What it does**: Triggers the **Semantic Extractor** (Qwen 7B) → **Librarian** (RAG) → **Lead Investigator** (DeepSeek-R1).
+* **What it does**: Triggers the **Semantic Extractor** (Qwen 7B) → **Librarian** (RAG) → **Lead Investigator** (DeepSeek-R1-14B) in a sequential loop to maximize your 24GB total VRAM.
 
 ---
 
 ## 2. Advanced "Forensic Vault" Features
 
-### Dual-Input Detection
-The pipeline automatically senses your input type:
-* **CSV Input**: Triggers full log cleaning and semantic JSON extraction.
-* **Direct File (`.json` / `.txt`)**: Treats the file as a pre-verified "Truth Block" and moves straight to RAG enrichment and reporting.
+### Sequential Actuation
+Unlike single-GPU setups, your pipeline runs in **Phases (Acts A, B, C)**. This allows the **DeepSeek-14B** model to utilize the full bandwidth of all three cards for reasoning without hitting the OOM (Out-of-Memory) wall that occurs when trying to process 5 pages of text at once.
 
-### Semantic Memory (RAG)
-Unlike the 8GB version, the Pro version fetches **Expert Context**. The final report will automatically cite historical remediation steps or MITRE techniques found in your database.
+### Institutional Memory (RAG)
+The agent fetches **Expert Context** from your past investigations. The final **SOC_Report.docx** will automatically include iSecurify-branded remediation steps based on your local database.
 
 ---
 
-## 3. Hardware & VRAM Stats
+## 3. Hardware & VRAM Stats (3x 1070 Optimized)
 
-| Metric | Pro GPU Mode | Laptop Mode (Fallback) |
+| Metric | 1070-Optimized Mode (Current) | Laptop Mode (Fallback) |
 | :--- | :--- | :--- |
-| **Primary Model** | DeepSeek-R1 (32B) | Qwen 2.5 Coder (3B) |
-| **Reasoning** | Chain-of-Thought (`<think>`) | Standard Inference |
-| **VRAM Usage** | ~28GB (Distributed) | ~2.5GB |
-| **Context Window** | **32,768 Tokens** | 4,096 Tokens |
-| **Intelligence** | Semantic RAG + JSON Truth | Regex + Text Truth |
+| **Primary Model** | **DeepSeek-R1 (14B)** | Qwen 2.5 Coder (3B) |
+| **VRAM Usage** | ~12GB - 14GB (Phased) | ~2.5GB |
+| **Context Window** | **8,192 Tokens (NUM_CTX)** | 4,096 Tokens |
+| **Architecture** | **3x 8GB GPU Splitting**| Single GPU / CPU |
+| **Output Target** | **5-Page Narrative (Phased)** | 1-Page Summary |
 
 ---
 
 ## 4. Pro Troubleshooting
 
-### "RAG Context Missing"
-* **Problem**: The report doesn't mention any past company incidents.
-* **Solution**: Ensure `data/vector_db/` exists. Re-run `ingest_knowledge.py`.
+### "GPU Fallen Off the Bus" (Unknown Error)
+* **Problem**: `nvidia-smi` shows an "Unknown Error" or unable to determine handle for a card.
+* **Solution**: This is often a power spike or physical seating issue. **Reseat** the card and ensure each 1070 has a **dedicated power cable** (no pigtails). Enable persistence mode to keep the driver active: `sudo nvidia-smi -pm 1`.
 
-### "OOM / Slow Inference"
-* **Problem**: DeepSeek-R1 is taking 10+ minutes.
-* **Solution**: Run `nvidia-smi` to ensure all 4 GPUs are visible. Check if `OLLAMA_NUM_PARALLEL` is set in `start_ollama.sh`.
+### "Slow Inference on Act B"
+* **Problem**: Act B (Forensic Deep-Dive) is slower than Act A.
+* **Solution**: Act B is the most data-intensive act. Ensure `KEEP_ALIVE=0` is set so the VRAM is fully cleared of Act A's KV-cache before Act B begins.

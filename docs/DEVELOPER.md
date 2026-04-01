@@ -1,13 +1,13 @@
-# Developer Guide - Semantic RAG Architecture (v2026)
+# Developer Guide - Phased Forensic RAG Architecture (v2026)
 
 ## System Architecture
 
-### Multi-Agent Orchestration
-The system utilizes a "Chain of Reasoning" where specialized models handle extraction, retrieval, and synthesis, communicating via a structured **JSON Truth Block**.
+### Multi-Act Forensic Orchestration
+The system utilizes a "Sequential Chain of Reasoning." To respect VRAM limits while achieving 5-page report depth, models are loaded, utilized for a specific "Act," and then flushed.
 
 ```text
 ┌───────────────────────────────────────────────────────────┐
-│                      pipeline.py                          │
+│                    pipeline.py                            │
 │     (Master Orchestrator - Syncs Extraction & RAG)        │
 └──────────┬─────────────────────────────┬──────────────────┘
            │                             │
@@ -16,22 +16,23 @@ The system utilizes a "Chain of Reasoning" where specialized models handle extra
     │  INGESTION   │             │   PIPELINE    │
     └──────┬───────┘             └───────┬───────┘
            │                             │
- [ingest_knowledge.py]         [csv_to_incident.py]
-           ↓                    (Processor + Semantic Extractor)
+ [ingest_knowledge.py]         [csv_to_incident.py] / [pipeline.py]
+           ↓                    (Cleaner + Semantic Extractor)
  [CHROMA VECTOR DB]                      ↓
-           │                   [incident_ID.json] (Truth Block)
+           │                  [truth_block_ID.json] (Truth Block)
            │                             │
            └──────────────┬──────────────┘
                           ↓
-               [knowledge_base.py] (RAG)
-             (Retrieves historical context)
+                [knowledge_base.py] (RAG)
+              (Retrieves historical context)
                           ↓
-               [report_generator.py]
-             (DeepSeek-R1 reasoning engine)
+                [report_generator.py] 
+             (Phased 14B Reasoning Engine)
+           (Act A: Brief | Act B: Forensic | Act C: Strategy)
                           ↓
     ┌─────────────┬───────┴───────┬─────────────┐
     ↓             ↓               ↓             ↓
-[Report.md]  [Truth.json]  [Validation.txt] [Audit.log]
+[Report.md] [SOC_Report.docx] [Truth.json] [Audit.log]
 ```
 
 ---
@@ -39,79 +40,61 @@ The system utilizes a "Chain of Reasoning" where specialized models handle extra
 ## Module Descriptions
 
 ### 1. **pipeline.py** (The General)
-* **Purpose**: Coordinates the multi-agent handoffs.
-* **Logic**: It triggers the **Semantic Extractor**, pulls a `mitre_query` from the resulting JSON, calls the **Knowledge Base** for context, and finally invokes the **Report Generator**.
-* **Model Residency**: Configured to keep all three models (Qwen, Nomic, DeepSeek) resident in VRAM simultaneously.
+* **Purpose**: Manages the high-level investigation state.
+* **Logic**: Orchestrates the handoff from **Qwen-7B** (Extraction) to **ChromaDB** (RAG) and finally **DeepSeek-14B** (Reporting).
+* **VRAM Guard**: Ensures hostname and metadata are passed through to the final Docx exporter.
 
 ### 2. **semantic_extractor.py** (The Fact-Finder)
-* **Intelligence**: Uses **Qwen2.5-7B** to reason through raw log evidence.
-* **Output**: Produces a **Pydantic-validated JSON** object.
-* **Benefit**: Unlike regex, it understands the *intent* of a log entry (e.g., distinguishing between a failed login and a brute force attack).
+* **Intelligence**: Uses **Qwen2.5-7B** for forensic parsing.
+* **Logic**: Differentiates between **NARRATIVE** and **LOG** inputs to adjust extraction intent.
+* **Output**: Pydantic-validated **JSON Truth Block**.
 
-### 3. **knowledge_base.py** (The Librarian)
-* **Purpose**: Performs semantic search against **ChromaDB**.
-* **Context injection**: Fetches the top 3 most relevant past reports or hardening guides to provide "Expert Experience" to the writer.
+### 3. **report_generator.py** (The Lead Investigator)
+* **Intelligence**: **DeepSeek-R1 (14B)**.
+* **Phased Reasoning**: Instead of a single call, it executes three distinct acts (**Phase A, B, and C**) to bypass the "10-series bottleneck" and achieve a 4-5 page narrative depth.
+* **Memory Bridge**: Passes a summary of the previous act to the next to maintain forensic continuity.
 
-### 4. **report_generator.py** (The Lead Investigator)
-* **Intelligence**: Uses **DeepSeek-R1 (32B)** with a **32k context window**.
-* **Reasoning**: It processes the JSON facts and RAG context through a "Chain of Thought" (`<think>` tags) to produce Tier 3 narrative paragraphs.
+### 4. **docx_exporter.py** (The Publisher)
+* **Purpose**: Converts Markdown into iSecurify-branded Word documents.
+* [cite_start]**Design**: Implements blue-accented headings (RGB 0, 32, 96), a professional cover page, and a mandatory "Confidential" footer.
 
 ---
 
 ## Data Flow & Forensic Integrity
 
-### The JSON "Truth Block" (incident.json)
-The system has moved from flat text to a structured schema. This is the **Forensic Anchor** of the investigation:
+### The JSON "Truth Block" (`truth_block_[run_id].json`)
+This structured object prevents AI hallucination by anchoring all phases to verified data.
 ```json
 {
-  "metadata": {"run_id": "20260326_1500", "severity": 8},
-  "affected_scope": {"target_ips": ["10.51.10.7"], "file_paths": ["/var/www/html/"]},
-  "forensic_indicators": {"permission_bits": "777", "protocols": ["TCP/22"]},
-  "human_intelligence": {"analyst_notes": "Suspected pentest."}
+  "METADATA": {"run_id": "20260401_1500", "hostname": "EMBERVEIL"},
+  "FINDINGS": {
+    "primary_classification": "Unauthorized SSH Access",
+    "target_ips": ["111.90.173.220"],
+    "permission_bits": "777",
+    "mitre_query": "T1110.001 Password Brute Forceing"
+  }
 }
 ```
 
-### The 32GB VRAM Optimization
-To maximize your **4x 8GB GPU** stack, the system enforces:
-* **Layer Splitting**: DeepSeek-R1 layers are distributed across GPUs 0-3.
-* **Flash Attention**: Enabled via environment variables to handle long-form reports.
-* **Model Orchestration**: `OLLAMA_MAX_LOADED_MODELS=3` prevents VRAM swapping during the RAG lookup phase.
+### The 24GB VRAM Optimization (3x 1070)
+To maximize the 8GB VRAM per card, the system enforces:
+* **Sequential Flushing**: `KEEP_ALIVE=0` is set in all Ollama calls to ensure the GPU is 100% empty between the Extractor and Reporter phases.
+* **Context Slicing**: The `_trim_json_for_phase` method sends only the necessary data segments to the AI, keeping the KV cache lean and fast.
 
 ---
 
 ## Customization & Scaling
 
-### 1. Expanding the Knowledge Base
-To update the agent's expertise, add new report snippets to `src/ingest_knowledge.py` and re-run:
-```bash
-python3 src/ingest_knowledge.py
-```
+### 1. Phased Prompt Engineering (`templates/`)
+* **`global_header.txt`**: The permanent iSecurify persona and narrative guardrails.
+* **`phase_a/b/c.txt`**: Detailed objectives for the Brief, Forensic Deep-Dive, and Strategic Resolution.
 
-### 2. Adjusting the "Persona" (templates/)
-* **`prompt_template.txt`**: Change this to modify the AI's "voice" (e.g., making it more compliance-focused for PCI DSS audits).
-* **`report_format.txt`**: Edit this to change the Markdown structure without touching the Python code.
-
----
-
-## Testing & Diagnostics
-
-### System Health Check
-Run the diagnostic tool to verify GPUs, Vector DB, and Model status:
-```bash
-python3 scripts/verify_setup.py
-```
-
-### Manual RAG Testing
-You can test the Librarian's retrieval accuracy independently:
-```python
-from src.knowledge_base import fetch_expert_context
-print(fetch_expert_context("How do we handle world-writable SQL files?"))
-```
+### 2. Branding & Design
+Modify `src/docx_exporter.py` to adjust typography, RGB color schemes, or cover page tables to match evolving company document standards.
 
 ---
 
 ## Version & Hardware Requirements
-* **OS**: Ubuntu 22.04+ (Recommended for NVIDIA driver stability).
-* **VRAM**: 32GB (Required for DeepSeek-R1 32B + Qwen-7B residency).
-* **ChromaDB**: Latest (Used for local vector storage).
-* **Ollama**: v0.1.x+ (Required for `format="json"` support).
+* **VRAM**: 24GB (3x 8GB recommended; utilizes layer splitting).
+* **Models**: `deepseek-r1:14b`, `qwen2.5:7b`, `nomic-embed-text`.
+* **Python**: 3.10+ (requires `python-docx`, `pydantic`, and `pandas`).
