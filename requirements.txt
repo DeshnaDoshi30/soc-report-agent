@@ -19,3 +19,7 @@ unstructured[pdf]       # Required by DirectoryLoader for advanced parsing
 
 # --- Vector Database ---
 chromadb
+
+# --- Web UI (Streamlit App) ---
+streamlit>=1.28.0       # Interactive web interface for SOC reports
+streamlit-option-menu   # Better sidebar navigation

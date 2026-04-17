@@ -1,0 +1,390 @@
+"""
+SOC Report Agent - Streamlit Web UI
+Professional interface for forensic report generation
+Run: streamlit run app.py
+"""
+import streamlit as st
+import sys
+import logging
+from pathlib import Path
+from datetime import datetime
+import time
+import subprocess
+import os
+import json
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from src.hardware_detector import HardwareDetector
+from src.report_database import ReportDatabase
+from src.report_organizer import ReportOrganizer
+from src.pipeline import UnifiedPipeline
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Page config
+st.set_page_config(
+    page_title="iSecurify SOC Report Agent",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS for professional styling
+st.markdown("""
+    <style>
+    .main { max-width: 1400px; margin: 0 auto; }
+    .header-blue { color: #001F4F; font-weight: bold; }
+    .success-box { 
+        background-color: #E8F5E9; 
+        padding: 1rem; 
+        border-left: 4px solid #4CAF50;
+        border-radius: 4px;
+    }
+    .warning-box { 
+        background-color: #FFF3E0; 
+        padding: 1rem; 
+        border-left: 4px solid #FF9800;
+        border-radius: 4px;
+    }
+    .error-box { 
+        background-color: #FFEBEE; 
+        padding: 1rem; 
+        border-left: 4px solid #F44336;
+        border-radius: 4px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Initialize session state
+if 'running' not in st.session_state:
+    st.session_state.running = False
+if 'logs' not in st.session_state:
+    st.session_state.logs = []
+
+def initialize_services():
+    """Initialize detectors and databases."""
+    ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+    
+    return {
+        'detector': HardwareDetector(ollama_host),
+        'db': ReportDatabase(),
+        'organizer': ReportOrganizer()
+    }
+
+def main():
+    # Header
+    col1, col2 = st.columns([0.2, 0.8])
+    with col1:
+        st.image("https://via.placeholder.com/100?text=iSecurify", width=80)
+    with col2:
+        st.markdown("<h1 class='header-blue'>🛡️ iSecurify SOC Report Agent</h1>", unsafe_allow_html=True)
+        st.markdown("*Professional Forensic Investigation & Report Generation*")
+    
+    st.divider()
+    
+    # Initialize services
+    services = initialize_services()
+    detector = services['detector']
+    db = services['db']
+    organizer = services['organizer']
+    
+    # Sidebar
+    with st.sidebar:
+        st.markdown("### ⚙️ Configuration")
+        
+        # Ollama Host
+        ollama_host = st.text_input(
+            "Ollama Host",
+            value=os.getenv('OLLAMA_HOST', 'http://localhost:11434'),
+            help="Ollama server address"
+        )
+        
+        # Hardware Status
+        st.markdown("### 🎮 Hardware Status")
+        hw_summary = detector.get_hardware_summary()
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("GPU Count", hw_summary['gpu_count'])
+            st.metric("Available VRAM", f"{hw_summary['total_vram_gb']} GB")
+        with col2:
+            st.metric("Available RAM", f"{hw_summary['available_ram_gb']} GB")
+        
+        st.markdown("### 📊 Database Stats")
+        stats = db.get_stats()
+        st.write(f"**Total Reports:** {stats.get('total_reports', 0)}")
+        st.write(f"**Unique Hosts:** {stats.get('unique_hosts', 0)}")
+        st.write(f"**Avg Time:** {stats.get('avg_processing_time', 0):.1f}s")
+    
+    # Main tabs
+    tab1, tab2, tab3 = st.tabs(["📝 Generate Report", "📋 Report History", "ℹ️ About"])
+    
+    with tab1:
+        st.markdown("## Generate New Forensic Report")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### 📂 Input Data")
+            
+            # File selection
+            input_file = st.file_uploader(
+                "Select CSV log file",
+                type=['csv', 'txt'],
+                help="Upload forensic log data (CSV or TXT)"
+            )
+            
+            if input_file:
+                st.success(f"✓ File loaded: {input_file.name}")
+            
+            # Analyst insight
+            analyst_insight = st.text_area(
+                "Analyst Insight (Optional)",
+                placeholder="Enter initial observations or hypothesis...",
+                height=100,
+                help="Provide context to guide the AI analysis"
+            )
+            
+            st.markdown("### 🤖 Model Selection")
+            
+            # Get compatible models
+            compatible_models = detector.get_compatible_models()
+            
+            if not compatible_models:
+                st.error("❌ No compatible models found. Check hardware and Ollama installation.")
+            else:
+                # Filter for Phase 3 suitable models (14b, 8b)
+                phase3_models = [m for m in compatible_models if m['suitable_for_phase3']]
+                
+                if phase3_models:
+                    model_options = {
+                        f"{m['name']} ({m['vram_needed_gb']}GB VRAM)": m['name']
+                        for m in phase3_models
+                    }
+                    
+                    selected_model = st.selectbox(
+                        "Select Model for Report Generation (Phase 3)",
+                        options=list(model_options.keys()),
+                        help="Only models suitable for report generation are shown"
+                    )
+                    
+                    # Show model details
+                    model_name = model_options[selected_model]
+                    model_info = next((m for m in phase3_models if m['name'] == model_name), None)
+                    
+                    if model_info:
+                        col_a, col_b, col_c = st.columns(3)
+                        with col_a:
+                            st.info(f"🎯 VRAM: {model_info['vram_available_gb']}GB available")
+                        with col_b:
+                            st.info(f"📏 Context: {model_info['context_window']} tokens")
+                        with col_c:
+                            st.info(f"✅ Safety: {model_info['vram_margin_percent']:.1f}% margin")
+                else:
+                    st.warning("⚠️ No suitable models for Phase 3 (need 14b/8b variants)")
+        
+        with col2:
+            st.markdown("### 🚀 Run Pipeline")
+            
+            st.markdown("**Status Indicators:**")
+            status_placeholder = st.empty()
+            
+            # Run button
+            if st.button("🚀 Generate Report", type="primary", use_container_width=True):
+                if not input_file:
+                    st.error("❌ Please select an input file first")
+                else:
+                    st.session_state.running = True
+                    
+                    # Save uploaded file temporarily
+                    temp_file = Path("/tmp") / f"temp_{input_file.name}"
+                    temp_file.write_bytes(input_file.getvalue())
+                    
+                    try:
+                        with status_placeholder.container():
+                            st.info("🔄 Pipeline running...")
+                        
+                        # Run pipeline
+                        start_time = time.time()
+                        pipeline = UnifiedPipeline(
+                            input_file=str(temp_file),
+                            human_insight=analyst_insight,
+                            model=model_options.get(selected_model)
+                        )
+                        
+                        success = pipeline.run()
+                        processing_time = time.time() - start_time
+                        
+                        if success:
+                            status_placeholder.success(f"✅ Report generated in {processing_time:.1f}s")
+                            
+                            # Archive and add to database
+                            report_path = organizer.archive_report(
+                                pipeline.run_id,
+                                "Analysis Host",
+                                ""
+                            )
+                            
+                            if report_path:
+                                db.add_report(
+                                    pipeline.run_id,
+                                    "Analysis Host",
+                                    model_used=model_options.get(selected_model),
+                                    processing_time=processing_time,
+                                    summary="Report generated successfully"
+                                )
+                                
+                                st.markdown("#### 📊 Report Generated!")
+                                st.success(f"Run ID: `{pipeline.run_id}`")
+                                
+                                # Show download buttons
+                                docx_path = report_path / f"SOC_Report_{pipeline.run_id}.docx"
+                                md_path = report_path / f"incident_report_{pipeline.run_id}.md"
+                                json_path = report_path / f"incident_{pipeline.run_id}.json"
+                                
+                                col_d1, col_d2, col_d3 = st.columns(3)
+                                with col_d1:
+                                    if docx_path.exists():
+                                        st.download_button(
+                                            "📄 Download DOCX",
+                                            docx_path.read_bytes(),
+                                            f"SOC_Report_{pipeline.run_id}.docx"
+                                        )
+                                with col_d2:
+                                    if md_path.exists():
+                                        st.download_button(
+                                            "📝 Download MD",
+                                            md_path.read_text(),
+                                            f"incident_report_{pipeline.run_id}.md"
+                                        )
+                                with col_d3:
+                                    if json_path.exists():
+                                        st.download_button(
+                                            "📑 Download JSON",
+                                            json_path.read_text(),
+                                            f"incident_{pipeline.run_id}.json"
+                                        )
+                        else:
+                            status_placeholder.error("❌ Pipeline failed")
+                    
+                    except Exception as e:
+                        status_placeholder.error(f"❌ Error: {str(e)}")
+                    
+                    finally:
+                        st.session_state.running = False
+                        if temp_file.exists():
+                            temp_file.unlink()
+    
+    with tab2:
+        st.markdown("## 📋 Report History")
+        
+        # Search/filter options
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            search_type = st.selectbox("Search by:", ["All", "Hostname", "Classification"])
+        with col2:
+            search_query = st.text_input("Search query")
+        with col3:
+            if st.button("🔍 Search"):
+                pass
+        
+        st.divider()
+        
+        # Get reports
+        reports = organizer.list_archived_reports(limit=20)
+        
+        if reports:
+            for report in reports:
+                with st.expander(f"📊 {report.get('hostname', 'Unknown')} - {report.get('archived_date', 'N/A')}"):
+                    col1, col2 = st.columns([0.7, 0.3])
+                    
+                    with col1:
+                        st.write(f"**Run ID:** `{report['run_id']}`")
+                        st.write(f"**Classification:** {report.get('primary_classification', 'N/A')}")
+                        st.write(f"**Date:** {report.get('archived_date', 'N/A')}")
+                    
+                    with col2:
+                        files = report.get('files', {})
+                        if files:
+                            st.write("**Available Files:**")
+                            for file_type in files:
+                                st.write(f"• {file_type}")
+                    
+                    # Download options
+                    st.markdown("**Downloads:**")
+                    col_d1, col_d2, col_d3 = st.columns(3)
+                    
+                    if 'SOC' in report.get('files', {}):
+                        docx_path = Path(__file__).parent / "data" / report['files']['SOC']
+                        if docx_path.exists():
+                            with col_d1:
+                                st.download_button(
+                                    "📄 DOCX",
+                                    docx_path.read_bytes(),
+                                    key=f"docx_{report['run_id']}"
+                                )
+                    
+                    if 'incident' in report.get('files', {}):
+                        md_path = Path(__file__).parent / "data" / report['files']['incident']
+                        if md_path.exists():
+                            with col_d2:
+                                st.download_button(
+                                    "📝 Markdown",
+                                    md_path.read_text(),
+                                    key=f"md_{report['run_id']}"
+                                )
+                    
+                    if 'incident_20' in str(report.get('files', {})):
+                        json_path = Path(__file__).parent / "data" / report['files'].get('incident', '')
+                        if json_path.exists():
+                            with col_d3:
+                                st.download_button(
+                                    "📑 JSON",
+                                    json_path.read_text(),
+                                    key=f"json_{report['run_id']}"
+                                )
+        else:
+            st.info("No reports found. Generate your first report to get started!")
+    
+    with tab3:
+        st.markdown("## About iSecurify SOC Report Agent")
+        
+        st.markdown("""
+        ### 🎯 Purpose
+        Automated forensic investigation and professional SOC report generation using AI-powered analysis.
+        
+        ### ⚙️ Technology Stack
+        - **Extraction**: Qwen 2.5 7B (semantic fact extraction)
+        - **Embedding**: Nomic Embed Text (knowledge retrieval)
+        - **Reasoning**: DeepSeek-R1 (phased report generation)
+        - **RAG**: ChromaDB (knowledge base search)
+        - **UI**: Streamlit (modern web interface)
+        
+        ### 🚀 How It Works
+        1. **Analyze**: Upload forensic logs (CSV/TXT)
+        2. **Extract**: Qwen identifies key indicators and classifications
+        3. **Retrieve**: ChromaDB injects historical context
+        4. **Generate**: DeepSeek writes professional 5-page report
+        5. **Export**: Download formatted DOCX with corporate branding
+        
+        ### 📊 Report Format
+        - Executive summary
+        - Technical deep-dive
+        - Strategic recommendations
+        - Professional iSecurify branding
+        - Confidentiality footer
+        
+        ### 🔐 Data Protection
+        - All files archived in `data/archive/YYYY-MM-DD/run_id/`
+        - SQLite database for report history
+        - Local processing (no cloud uploads)
+        
+        *Version: 2026 | Project: Final Year Engineering | Company Ready*
+        """)
+
+if __name__ == "__main__":
+    main()
