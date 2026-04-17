@@ -72,10 +72,13 @@ section[data-testid="stSidebar"] {
     max-width: 220px !important;
     padding: 0 !important;
 }
-section[data-testid="stSidebar"] * { color: #A8BACE !important; font-family: var(--sans) !important; }
+section[data-testid="stSidebar"] * { color: #A8BACE !important; }
+section[data-testid="stSidebar"] *:not(.material-symbols-rounded):not(.material-icons):not(svg):not(path) { font-family: var(--sans) !important; }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3 { color: #E4EDF6 !important; }section[data-testid=\"stSidebar\"] > * { margin-bottom: 0 !important; }section[data-testid="stSidebar"] .stMetric { background: rgba(255,255,255,0.04) !important; border-radius: 6px; padding: 6px 8px; margin-bottom: 4px; }
+section[data-testid="stSidebar"] h3 { color: #E4EDF6 !important; }
+section[data-testid="stSidebar"] > * { margin-bottom: 0 !important; }
+section[data-testid="stSidebar"] .stMetric { background: rgba(255,255,255,0.04) !important; border-radius: 6px; padding: 6px 8px; margin-bottom: 4px; }
 section[data-testid="stSidebar"] .stMetric label   { color: #6A7F96 !important; font-size: 10px !important; font-weight: 700 !important; }
 section[data-testid="stSidebar"] .stMetric [data-testid="stMetricValue"] { color: #E4EDF6 !important; font-family: var(--mono) !important; font-size: 16px !important; font-weight: 800 !important; }
 section[data-testid="stSidebar"] .stTextInput input {
@@ -108,8 +111,8 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     font-weight: 800 !important;
 }
 
-/* Active nav item — applied via a wrapper class we inject */
-.nav-active .stButton > button {
+/* Active nav item */
+section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
     background: rgba(29,111,235,0.15) !important;
     color: #7EC8FF !important;
     font-weight: 600 !important;
@@ -612,14 +615,10 @@ def main():
         # ── BUG FIX: sidebar buttons drive routing via session_state + st.rerun() ──
         # No query params, no broken conditionals.
         for key, label in nav_items.items():
-            # Highlight active page by wrapping in a div with the nav-active class
-            if st.session_state.page == key:
-                st.markdown("<div class='nav-active'>", unsafe_allow_html=True)
-            if st.button(label, key=f"nav_{key}", use_container_width=True):
+            is_active = (st.session_state.page == key)
+            if st.button(label, key=f"nav_{key}", use_container_width=True, type="primary" if is_active else "secondary"):
                 st.session_state.page = key
                 st.rerun()
-            if st.session_state.page == key:
-                st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown(
             "<hr style='border:none;border-top:1px solid rgba(255,255,255,0.08);margin:8px 0;'>",
