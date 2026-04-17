@@ -68,14 +68,14 @@ html, body, [class*="css"] { font-family: var(--sans) !important; }
 section[data-testid="stSidebar"] {
     background: var(--navy-900) !important;
     border-right: 1px solid rgba(255,255,255,0.06) !important;
-    min-width: 215px !important;
-    max-width: 230px !important;
+    min-width: 200px !important;
+    max-width: 220px !important;
+    padding: 0 !important;
 }
 section[data-testid="stSidebar"] * { color: #A8BACE !important; font-family: var(--sans) !important; }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3 { color: #E4EDF6 !important; }
-section[data-testid="stSidebar"] .stMetric         { background: rgba(255,255,255,0.04) !important; border-radius: 6px; padding: 8px 10px; }
+section[data-testid="stSidebar"] h3 { color: #E4EDF6 !important; }section[data-testid=\"stSidebar\"] > * { margin-bottom: 0 !important; }section[data-testid="stSidebar"] .stMetric { background: rgba(255,255,255,0.04) !important; border-radius: 6px; padding: 6px 8px; margin-bottom: 4px; }
 section[data-testid="stSidebar"] .stMetric label   { color: #6A7F96 !important; font-size: 10px !important; font-weight: 700 !important; }
 section[data-testid="stSidebar"] .stMetric [data-testid="stMetricValue"] { color: #E4EDF6 !important; font-family: var(--mono) !important; font-size: 16px !important; font-weight: 800 !important; }
 section[data-testid="stSidebar"] .stTextInput input {
@@ -83,8 +83,10 @@ section[data-testid="stSidebar"] .stTextInput input {
     border: 1px solid rgba(255,255,255,0.10) !important;
     color: #A8BACE !important;
     font-family: var(--mono) !important;
-    font-size: 12px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
     border-radius: 5px;
+    padding: 6px 8px !important;
 }
 section[data-testid="stSidebar"] .stButton > button {
     background: transparent !important;
@@ -93,9 +95,10 @@ section[data-testid="stSidebar"] .stButton > button {
     font-size: 12px !important;
     font-weight: 700 !important;
     text-align: left !important;
-    padding: 6px 10px !important;
+    padding: 7px 12px !important;
+    margin: 0 -10px !important;
     border-radius: 5px !important;
-    width: 100% !important;
+    width: calc(100% + 20px) !important;
     transition: background 0.15s, color 0.15s;
     letter-spacing: 0.3px;
 }
@@ -581,14 +584,14 @@ def main():
     with st.sidebar:
         # Wordmark
         st.markdown("""
-        <div style="padding:12px 6px 12px; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:12px;">
-            <span style="font-family:'IBM Plex Sans',sans-serif; font-size:14px; font-weight:800; color:#E4EDF6; letter-spacing:-0.3px;">
+        <div style="padding:10px 0 10px 0; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:10px;">
+            <span style="font-family:'IBM Plex Sans',sans-serif; font-size:14px; font-weight:800; color:#E4EDF6; letter-spacing:-0.3px; display:block; margin-left:4px;">
                 iSecurify
             </span>
             <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:800; letter-spacing:1px;
                          text-transform:uppercase; color:#fff;
                          background:#1D6FEB; border:none;
-                         border-radius:3px; padding:2px 6px; margin-left:6px; vertical-align:middle;">
+                         border-radius:3px; padding:3px 6px; margin-top:2px; margin-left:4px; display:inline-block;">
                 SOC
             </span>
         </div>
@@ -596,8 +599,8 @@ def main():
 
         # Navigation label
         st.markdown(
-            "<p style='font-size:10px;font-weight:800;letter-spacing:1.2px;"
-            "text-transform:uppercase;color:#60A5FA;margin:0 0 8px 4px'>Navigation</p>",
+            "<p style='font-size:10px;font-weight:800;letter-spacing:1px;"
+            "text-transform:uppercase;color:#60A5FA;margin:0 0 6px 4px;line-height:1'>Navigation</p>",
             unsafe_allow_html=True
         )
 
@@ -619,14 +622,14 @@ def main():
                 st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown(
-            "<hr style='border:none;border-top:1px solid rgba(255,255,255,0.06);margin:14px 0'>",
+            "<hr style='border:none;border-top:1px solid rgba(255,255,255,0.08);margin:8px 0;'>",
             unsafe_allow_html=True
         )
 
         # Hardware
         st.markdown(
-            "<p style='font-size:10px;font-weight:800;letter-spacing:1.2px;"
-            "text-transform:uppercase;color:#60A5FA;margin:0 0 8px 4px'>Hardware</p>",
+            "<p style='font-size:10px;font-weight:800;letter-spacing:1px;"
+            "text-transform:uppercase;color:#60A5FA;margin:0 0 6px 4px;line-height:1'>Hardware</p>",
             unsafe_allow_html=True
         )
         c1, c2 = st.columns(2)
@@ -638,14 +641,14 @@ def main():
             st.caption("⚠️ No GPU detected — inference will use system RAM.")
 
         st.markdown(
-            "<hr style='border:none;border-top:1px solid rgba(255,255,255,0.06);margin:14px 0'>",
+            "<hr style='border:none;border-top:1px solid rgba(255,255,255,0.08);margin:8px 0;'>",
             unsafe_allow_html=True
         )
 
         # DB stats
         st.markdown(
-            "<p style='font-size:10px;font-weight:800;letter-spacing:1.2px;"
-            "text-transform:uppercase;color:#60A5FA;margin:0 0 8px 4px'>Stats</p>",
+            "<p style='font-size:10px;font-weight:800;letter-spacing:1px;"
+            "text-transform:uppercase;color:#60A5FA;margin:0 0 6px 4px;line-height:1'>Stats</p>",
             unsafe_allow_html=True
         )
         st.caption(f"Reports: **{stats.get('total_reports', 0)}**")
@@ -653,14 +656,14 @@ def main():
         st.caption(f"Avg time: **{stats.get('avg_processing_time', 0):.1f}s**")
 
         st.markdown(
-            "<hr style='border:none;border-top:1px solid rgba(255,255,255,0.06);margin:14px 0'>",
+            "<hr style='border:none;border-top:1px solid rgba(255,255,255,0.08);margin:8px 0;'>",
             unsafe_allow_html=True
         )
 
         # Config
         st.markdown(
-            "<p style='font-size:10px;font-weight:800;letter-spacing:1.2px;"
-            "text-transform:uppercase;color:#60A5FA;margin:0 0 6px 4px'>Config</p>",
+            "<p style='font-size:10px;font-weight:800;letter-spacing:1px;"
+            "text-transform:uppercase;color:#60A5FA;margin:0 0 6px 4px;line-height:1'>Config</p>",
             unsafe_allow_html=True
         )
         st.text_input(
