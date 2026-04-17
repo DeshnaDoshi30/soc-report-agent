@@ -60,8 +60,8 @@ st.markdown("""
 html, body, [class*="css"] { font-family: var(--sans) !important; }
 .main .block-container {
     background: var(--slate-50);
-    max-width: 900px;
-    padding: 1.8rem 2.2rem 4rem;
+    max-width: 100%;
+    padding: 0.8rem 1.2rem 1.2rem;
 }
 
 /* ── Sidebar ── */
@@ -76,8 +76,8 @@ section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3 { color: #E4EDF6 !important; }
 section[data-testid="stSidebar"] .stMetric         { background: rgba(255,255,255,0.04) !important; border-radius: 6px; padding: 8px 10px; }
-section[data-testid="stSidebar"] .stMetric label   { color: #6A7F96 !important; font-size: 11px !important; }
-section[data-testid="stSidebar"] .stMetric [data-testid="stMetricValue"] { color: #E4EDF6 !important; font-family: var(--mono) !important; font-size: 18px !important; }
+section[data-testid="stSidebar"] .stMetric label   { color: #6A7F96 !important; font-size: 10px !important; font-weight: 700 !important; }
+section[data-testid="stSidebar"] .stMetric [data-testid="stMetricValue"] { color: #E4EDF6 !important; font-family: var(--mono) !important; font-size: 16px !important; font-weight: 800 !important; }
 section[data-testid="stSidebar"] .stTextInput input {
     background: rgba(255,255,255,0.05) !important;
     border: 1px solid rgba(255,255,255,0.10) !important;
@@ -90,17 +90,19 @@ section[data-testid="stSidebar"] .stButton > button {
     background: transparent !important;
     border: none !important;
     color: #7A93AC !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
     text-align: left !important;
-    padding: 7px 10px !important;
+    padding: 6px 10px !important;
     border-radius: 5px !important;
     width: 100% !important;
     transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.3px;
 }
 section[data-testid="stSidebar"] .stButton > button:hover {
-    background: rgba(29,111,235,0.10) !important;
+    background: rgba(29,111,235,0.15) !important;
     color: #93C5FD !important;
+    font-weight: 800 !important;
 }
 
 /* Active nav item — applied via a wrapper class we inject */
@@ -113,67 +115,71 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 /* ── Wordmark ── */
 .wordmark {
     display: flex;
-    align-items: baseline;
-    gap: 8px;
-    padding-bottom: 1.1rem;
-    margin-bottom: 1.4rem;
-    border-bottom: 1px solid var(--slate-200);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0.6rem 0;
+    margin-bottom: 0.8rem;
+    border: none;
 }
 .wordmark-name {
     font-family: var(--sans);
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 32px;
+    font-weight: 800;
     color: var(--navy-900);
-    letter-spacing: -0.3px;
+    letter-spacing: -0.5px;
+    margin: 0;
 }
 .wordmark-tag {
     font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
     text-transform: uppercase;
-    color: var(--blue-500);
-    background: var(--blue-100);
-    border: 1px solid var(--blue-border);
-    border-radius: 3px;
-    padding: 2px 6px;
+    color: #fff;
+    background: var(--blue-500);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 12px;
 }
 
 /* ── Page title ── */
 .page-title {
     font-family: var(--sans);
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--slate-800);
-    letter-spacing: -0.1px;
-    margin-bottom: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--slate-600);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin: 0 0 4px 0;
 }
 .page-divider {
     border: none;
     border-top: 1px solid var(--slate-200);
-    margin: 10px 0 20px;
+    margin: 4px 0 8px;
 }
 
 /* ── Expander (section card) ── */
 .streamlit-expanderHeader {
-    background: #fff !important;
-    border: 1px solid var(--slate-200) !important;
-    border-radius: 7px !important;
+    background: var(--navy-800) !important;
+    border: 1px solid var(--navy-700) !important;
+    border-radius: 6px !important;
     font-family: var(--sans) !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    color: var(--slate-600) !important;
-    padding: 12px 16px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    padding: 10px 14px !important;
 }
-.streamlit-expanderHeader:hover { border-color: var(--blue-border) !important; }
+.streamlit-expanderHeader:hover { background: var(--navy-700) !important; border-color: var(--blue-500) !important; }
 .streamlit-expanderContent {
-    border: 1px solid var(--slate-200) !important;
+    border: 1px solid var(--navy-700) !important;
     border-top: none !important;
-    border-radius: 0 0 7px 7px !important;
+    border-radius: 0 0 6px 6px !important;
     background: #fff !important;
-    padding: 18px 20px !important;
+    padding: 12px 14px !important;
 }
-div[data-testid="stExpander"] { margin-bottom: 10px; }
+div[data-testid="stExpander"] { margin-bottom: 6px; }
 
 /* ── Buttons ── */
 .stButton > button {
@@ -182,26 +188,28 @@ div[data-testid="stExpander"] { margin-bottom: 10px; }
     border: none !important;
     border-radius: 6px !important;
     font-family: var(--sans) !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    padding: 9px 18px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 8px 16px !important;
     transition: background 0.15s;
-    letter-spacing: 0.1px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
 }
-.stButton > button:hover { background: var(--navy-700) !important; }
+.stButton > button:hover { background: var(--blue-500) !important; }
 
 /* ── Inputs ── */
 .stTextArea textarea, .stTextInput input, .stSelectbox select {
-    border: 1px solid var(--slate-200) !important;
+    border: 1px solid var(--navy-700) !important;
     border-radius: 6px !important;
     font-family: var(--sans) !important;
-    font-size: 13px !important;
-    color: var(--slate-800) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--navy-800) !important;
     background: #fff !important;
 }
 .stTextArea textarea:focus, .stTextInput input:focus {
     border-color: var(--blue-500) !important;
-    box-shadow: 0 0 0 3px rgba(29,111,235,0.08) !important;
+    box-shadow: 0 0 0 3px rgba(29,111,235,0.12) !important;
 }
 .stFileUploader {
     border: 1px dashed var(--slate-200) !important;
@@ -211,13 +219,13 @@ div[data-testid="stExpander"] { margin-bottom: 10px; }
 
 /* ── Metrics in main area ── */
 .main [data-testid="metric-container"] {
-    background: var(--slate-100);
-    border: 1px solid var(--slate-200);
+    background: var(--navy-800);
+    border: 1px solid var(--navy-700);
     border-radius: 6px;
-    padding: 10px 14px;
+    padding: 8px 12px;
 }
-.main [data-testid="metric-container"] label { font-size: 11px !important; color: var(--slate-400) !important; font-family: var(--mono) !important; }
-.main [data-testid="stMetricValue"] { font-family: var(--mono) !important; font-size: 18px !important; color: var(--navy-800) !important; }
+.main [data-testid="metric-container"] label { font-size: 10px !important; color: #A8BACE !important; font-family: var(--mono) !important; font-weight: 700 !important; }
+.main [data-testid="stMetricValue"] { font-family: var(--mono) !important; font-size: 16px !important; color: #fff !important; font-weight: 700 !important; }
 
 /* ── Step indicators ── */
 .steps-wrap { display:flex; align-items:center; padding: 12px 0; }
@@ -235,29 +243,30 @@ div[data-testid="stExpander"] { margin-bottom: 10px; }
 .step-circle.active  { border-color: var(--blue-500); background: var(--blue-100); color: var(--blue-500); box-shadow: 0 0 0 4px rgba(29,111,235,0.10); }
 .step-circle.done    { border-color: var(--success); background: var(--success); color: #fff; }
 .step-circle.error   { border-color: var(--error);   background: var(--error);   color: #fff; }
-.step-label  { font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--slate-600); margin-top: 5px; white-space:nowrap; }
-.step-sub    { font-family: var(--mono); font-size: 10px; color: var(--slate-400); white-space:nowrap; }
+.step-label  { font-family: var(--sans); font-size: 10px; font-weight: 800; color: var(--navy-800); margin-top: 4px; white-space:nowrap; }
+.step-sub    { font-family: var(--mono); font-size: 9px; color: var(--blue-500); white-space:nowrap; font-weight: 600; }
 .step-line   { flex: 1; height: 2px; background: var(--slate-200); margin: 0 6px; margin-bottom: 18px; transition: background 0.3s; min-width: 40px; }
 .step-line.done   { background: var(--success); }
 .step-line.active { background: linear-gradient(90deg, var(--success) 0%, var(--blue-400) 100%); }
 
 /* ── Alerts ── */
-.stAlert { border-radius: 6px !important; font-family: var(--sans) !important; font-size: 13px !important; }
+.stAlert { border-radius: 6px !important; font-family: var(--sans) !important; font-size: 12px !important; font-weight: 700 !important; }
 
 /* ── Download buttons ── */
 .stDownloadButton > button {
-    background: var(--slate-100) !important;
-    color: var(--navy-800) !important;
-    border: 1px solid var(--slate-200) !important;
-    font-size: 12px !important;
-    padding: 7px 14px !important;
+    background: var(--navy-800) !important;
+    color: #fff !important;
+    border: 1px solid var(--navy-700) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    padding: 8px 12px !important;
 }
-.stDownloadButton > button:hover { background: var(--slate-200) !important; }
+.stDownloadButton > button:hover { background: var(--blue-500) !important; }
 
 hr { border-color: var(--slate-200) !important; }
 
 /* ── Caption / small text ── */
-.stCaption { font-family: var(--mono) !important; font-size: 11px !important; color: var(--slate-400) !important; }
+.stCaption { font-family: var(--mono) !important; font-size: 11px !important; color: var(--slate-600) !important; font-weight: 700 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -320,7 +329,7 @@ def page_generate(services):
     hw       = detector.get_hardware_summary()
 
     # Section: Input Data
-    with st.expander("📂  Input Data", expanded=True):
+    with st.expander("📂 Input Data", expanded=True):
         input_file = st.file_uploader(
             "Upload forensic log file",
             type=["csv", "txt"],
@@ -328,17 +337,14 @@ def page_generate(services):
             label_visibility="collapsed",
         )
         if input_file:
-            st.success(f"Loaded **{input_file.name}** — {len(input_file.getvalue()):,} bytes")
+            st.caption(f"✓ **{input_file.name}** — {len(input_file.getvalue()):,} bytes")
 
     # Section: Analyst Context
-    with st.expander("🧑‍💻  Analyst Context", expanded=True):
+    with st.expander("🧑‍💻 Analyst Context", expanded=True):
         analyst_insight = st.text_area(
             "Observations",
-            placeholder=(
-                "e.g. Suspected lateral movement from 192.168.1.45 between "
-                "02:00–04:00 UTC. Process hollowing observed on svchost.exe."
-            ),
-            height=120,
+            placeholder="e.g. Suspected lateral movement. Process hollowing observed.",
+            height=60,
             label_visibility="collapsed",
         )
 
@@ -346,7 +352,7 @@ def page_generate(services):
     compatible_models = detector.get_compatible_models()
     available_models  = detector.get_available_models()
 
-    with st.expander("🤖  Model Selection", expanded=False):
+    with st.expander("🤖 Model Selection", expanded=True):
         if not available_models:
             st.error("No models detected in Ollama. Run `ollama pull <model>` and restart.")
         elif not compatible_models:
@@ -355,7 +361,7 @@ def page_generate(services):
             phase3_models = [m for m in compatible_models if m.get("suitable_for_phase3")]
             if phase3_models:
                 labels = {
-                    f"{m['name']}  ·  {m.get('vram_needed_gb', '?')} GB": m["name"]
+                    f"{m['name']} · {m.get('vram_needed_gb', '?')}GB": m["name"]
                     for m in phase3_models
                 }
                 chosen_label = st.selectbox(
@@ -368,9 +374,9 @@ def page_generate(services):
 
                 m0 = phase3_models[0]
                 c1, c2, c3 = st.columns(3)
-                c1.metric("VRAM Available", f"{m0.get('vram_available_gb', '?')} GB")
-                c2.metric("Context Window",  f"{m0.get('context_window', '?')}")
-                c3.metric("Safety Margin",   f"{m0.get('vram_margin_percent', 0):.1f}%")
+                c1.metric("VRAM", f"{m0.get('vram_available_gb', '?')}GB")
+                c2.metric("Context", f"{m0.get('context_window', '?')}")
+                c3.metric("Safety", f"{m0.get('vram_margin_percent', 0):.0f}%")
             else:
                 st.warning("No Phase 3 models available. 14B or 8B model required.")
 
@@ -383,8 +389,8 @@ def page_generate(services):
             })
 
     # Run button
-    st.markdown("<div style='margin-top:16px'>", unsafe_allow_html=True)
-    run_clicked = st.button("🚀  Generate Report", use_container_width=False)
+    st.markdown("<div style='margin: 8px 0;'>", unsafe_allow_html=True)
+    run_clicked = st.button("🚀 GENERATE REPORT", use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
     # ── Pipeline ──
@@ -575,14 +581,14 @@ def main():
     with st.sidebar:
         # Wordmark
         st.markdown("""
-        <div style="padding:18px 6px 16px; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:14px;">
-            <span style="font-family:'IBM Plex Sans',sans-serif; font-size:16px; font-weight:700; color:#E4EDF6; letter-spacing:-0.3px;">
+        <div style="padding:12px 6px 12px; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:12px;">
+            <span style="font-family:'IBM Plex Sans',sans-serif; font-size:14px; font-weight:800; color:#E4EDF6; letter-spacing:-0.3px;">
                 iSecurify
             </span>
-            <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:600; letter-spacing:1px;
-                         text-transform:uppercase; color:#60A5FA;
-                         background:rgba(96,165,250,0.10); border:1px solid rgba(96,165,250,0.20);
-                         border-radius:3px; padding:1px 5px; margin-left:7px; vertical-align:middle;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:800; letter-spacing:1px;
+                         text-transform:uppercase; color:#fff;
+                         background:#1D6FEB; border:none;
+                         border-radius:3px; padding:2px 6px; margin-left:6px; vertical-align:middle;">
                 SOC
             </span>
         </div>
@@ -590,15 +596,15 @@ def main():
 
         # Navigation label
         st.markdown(
-            "<p style='font-size:9px;font-weight:600;letter-spacing:1.2px;"
-            "text-transform:uppercase;color:#3A5068;margin:0 0 6px 4px'>Navigation</p>",
+            "<p style='font-size:10px;font-weight:800;letter-spacing:1.2px;"
+            "text-transform:uppercase;color:#60A5FA;margin:0 0 8px 4px'>Navigation</p>",
             unsafe_allow_html=True
         )
 
         nav_items = {
-            "generate": "⚡  Generate",
-            "history":  "📋  History",
-            "about":    "ℹ️   About",
+            "generate": "⚡ Generate",
+            "history":  "📋 History",
+            "about":    "ℹ️ About",
         }
         # ── BUG FIX: sidebar buttons drive routing via session_state + st.rerun() ──
         # No query params, no broken conditionals.
@@ -619,8 +625,8 @@ def main():
 
         # Hardware
         st.markdown(
-            "<p style='font-size:9px;font-weight:600;letter-spacing:1.2px;"
-            "text-transform:uppercase;color:#3A5068;margin:0 0 8px 4px'>Hardware</p>",
+            "<p style='font-size:10px;font-weight:800;letter-spacing:1.2px;"
+            "text-transform:uppercase;color:#60A5FA;margin:0 0 8px 4px'>Hardware</p>",
             unsafe_allow_html=True
         )
         c1, c2 = st.columns(2)
@@ -638,8 +644,8 @@ def main():
 
         # DB stats
         st.markdown(
-            "<p style='font-size:9px;font-weight:600;letter-spacing:1.2px;"
-            "text-transform:uppercase;color:#3A5068;margin:0 0 8px 4px'>Stats</p>",
+            "<p style='font-size:10px;font-weight:800;letter-spacing:1.2px;"
+            "text-transform:uppercase;color:#60A5FA;margin:0 0 8px 4px'>Stats</p>",
             unsafe_allow_html=True
         )
         st.caption(f"Reports: **{stats.get('total_reports', 0)}**")
@@ -653,8 +659,8 @@ def main():
 
         # Config
         st.markdown(
-            "<p style='font-size:9px;font-weight:600;letter-spacing:1.2px;"
-            "text-transform:uppercase;color:#3A5068;margin:0 0 6px 4px'>Config</p>",
+            "<p style='font-size:10px;font-weight:800;letter-spacing:1.2px;"
+            "text-transform:uppercase;color:#60A5FA;margin:0 0 6px 4px'>Config</p>",
             unsafe_allow_html=True
         )
         st.text_input(
@@ -664,21 +670,17 @@ def main():
         )
 
     # ── Main content ──
-    # Wordmark (header — company name only, nothing more)
+    # Brand header (centered, large)
     st.markdown("""
-    <div class='wordmark'>
-        <span class='wordmark-name'>iSecurify</span>
-        <span class='wordmark-tag'>SOC Report Agent</span>
+    <div style='text-align: center; padding: 0.4rem 0; margin-bottom: 0.6rem;'>
+        <h1 style='margin: 0; font-size: 40px; font-weight: 800; color: var(--navy-900); letter-spacing: -0.5px;'>
+            SOC Report Agent
+        </h1>
+        <p style='margin: 2px 0 0 0; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--blue-500);'>
+            🛡️ iSecurify Forensic Analysis
+        </p>
     </div>
     """, unsafe_allow_html=True)
-
-    page_titles = {
-        "generate": "Generate New Forensic Report",
-        "history":  "Report History",
-        "about":    "About",
-    }
-    st.markdown(f"<p class='page-title'>{page_titles[st.session_state.page]}</p>", unsafe_allow_html=True)
-    st.markdown("<hr class='page-divider'>", unsafe_allow_html=True)
 
     # Route
     if st.session_state.page == "generate":
