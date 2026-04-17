@@ -154,8 +154,23 @@ def main():
             # Get compatible models
             compatible_models = detector.get_compatible_models()
             
+            # Initialize variables
+            model_options = {}
+            selected_model = None
+            
             if not compatible_models:
-                st.error("❌ No compatible models found. Check hardware and Ollama installation.")
+                st.error("""
+                ❌ **No compatible models found.** 
+                
+                **On your Linux server, run:**
+                ```bash
+                ollama list                           # Check installed models
+                ollama pull qwen2.5:7b               # Pull extraction model
+                ollama pull deepseek-r1:14b          # Pull report generation model
+                ollama serve &                        # Start Ollama in background
+                ```
+                Then refresh this page.
+                """)
             else:
                 # Filter for Phase 3 suitable models (14b, 8b)
                 phase3_models = [m for m in compatible_models if m['suitable_for_phase3']]
@@ -197,6 +212,8 @@ def main():
             if st.button("🚀 Generate Report", type="primary", use_container_width=True):
                 if not input_file:
                     st.error("❌ Please select an input file first")
+                elif not selected_model:
+                    st.error("❌ Please install and select a model first")
                 else:
                     st.session_state.running = True
                     
