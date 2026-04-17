@@ -81,7 +81,9 @@ class HardwareDetector:
                 for line in result.stdout.strip().split('\n')[1:]:  # Skip header
                     parts = line.split()
                     if parts:
-                        models.append(parts[0].split(':')[0] if ':' in parts[0] else parts[0])
+                        # Keep full model name with tag (e.g., "deepseek-r1:14b")
+                        model_full = parts[0]
+                        models.append(model_full)
                 return list(set(models))  # Remove duplicates
         except Exception as e:
             logger.warning(f"Could not fetch Ollama models: {e}")
