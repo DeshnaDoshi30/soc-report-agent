@@ -48,8 +48,17 @@ class SOCDataCleaner:
         logger.info(f"Cleaning Forensic Data: {self.input_path.name}")
         self.validate_paths()
 
+        # Auto-detect if chunking is needed for safety
+        # Large files (>10MB) should use chunking to avoid OOM on 8GB GPUs
+        if self.chunk_size is None:
+            file_size_mb = self.input_path.stat().st_size / (1024 * 1024)
+            if file_size_mb > 10:
+                # Auto-enable chunking for large files
+                self.chunk_size = 5000 if file_size_mb > 50 else 10000
+                logger.info(f"🔒 Auto-enabled chunking for large file ({file_size_mb:.1f}MB): {self.chunk_size} rows/batch")
+
         if self.chunk_size:
-            logger.info(f"Memory Guard Active: Processing in chunks of {self.chunk_size}")
+            logger.info(f"💾 Memory Guard Active: Processing in chunks of {self.chunk_size}")
             chunks = [self._clean_chunk(c) for c in pd.read_csv(self.input_path, chunksize=self.chunk_size)]
             df_clean = pd.concat(chunks, ignore_index=True)
         else:

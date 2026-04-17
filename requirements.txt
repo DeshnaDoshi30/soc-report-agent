@@ -5,6 +5,7 @@ python-dotenv
 requests
 pydantic>=2.0.0
 python-docx
+psutil                  # Hardware monitoring (RAM/VRAM pre-flight checks)
 
 # --- LangChain 2026 Orchestration ---
 langchain

@@ -9,16 +9,26 @@ from src.semantic_extractor import SemanticExtractor
 logger = logging.getLogger(__name__)
 
 class CSVToIncidentConverter:
-    def __init__(self, csv_file: str, human_insight: str = "", run_id: Optional[str] = None):
+    def __init__(self, csv_file: str, human_insight: str = "", run_id: Optional[str] = None, chunk_size: Optional[int] = None):
         """
         Orchestrates CSV -> Cleaned Data -> Semantic Fact Extraction.
         Syncs with the global Run ID for the JSON-based Forensic Vault.
+        
+        Args:
+            csv_file: Path to input CSV
+            human_insight: Analyst's guidance for extraction
+            run_id: Unique run identifier for vault sync
+            chunk_size: Number of rows per chunk (None = no chunking, uses default for large files)
         """
         self.csv_file = Path(csv_file)
         self.human_insight = human_insight
         
         # Use the provided Run ID from the Unified Pipeline
         self.run_id = run_id or "legacy_run"
+        
+        # Memory management: chunk_size helps with large files
+        # If not specified, processor will handle defaults
+        self.chunk_size = chunk_size
         
         # Use centralized Vault paths from config
         self.output_dir = config.OUTPUT_DIR
@@ -37,7 +47,8 @@ class CSVToIncidentConverter:
             logger.info(f"Initiating Log Cleaning for Run: {self.run_id}")
             cleaner = SOCDataCleaner(
                 input_path=self.csv_file,
-                output_path=self.cleaned_csv
+                output_path=self.cleaned_csv,
+                chunk_size=self.chunk_size  # Pass chunk_size for memory safety
             )
             df_clean = cleaner.clean_logs()
             
