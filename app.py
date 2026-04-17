@@ -33,51 +33,56 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for professional styling
+# Custom CSS for professional styling (purple theme)
 st.markdown("""
     <style>
-    .main { max-width: 1400px; margin: 0 auto; }
-    .header-blue { color: #001F4F; font-weight: bold; }
-    .success-box { 
-        background-color: #E8F5E9; 
-        padding: 1rem; 
-        border-left: 4px solid #4CAF50;
-        border-radius: 4px;
+    :root{
+        --primary: #6A1B9A; /* deep purple */
+        --primary-600: #7B1FA2;
+        --accent: #9C27B0;
+        --muted: #6b6b6b;
+        --surface: #ffffff;
+        --card: #FBF7FF;
     }
-    .warning-box { 
-        background-color: #FFF3E0; 
-        padding: 1rem; 
-        border-left: 4px solid #FF9800;
-        border-radius: 4px;
+    html, body {
+        background: var(--surface);
+        color: #222224;
+        font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
     }
-    .error-box { 
-        background-color: #FFEBEE; 
-        padding: 1rem; 
-        border-left: 4px solid #F44336;
-        border-radius: 4px;
+    .main { max-width: 1280px; margin: 0 auto; padding: 12px 18px; }
+    .brand { text-align:center; }
+    .brand h1 { color: var(--primary); margin:0; font-size:36px; letter-spacing: -0.6px; }
+    .brand p { margin:4px 0 0 0; color:var(--muted); font-style:italic }
+
+    /* Topbar container: title centered, nav on right */
+    .topbar { display:flex; align-items:center; justify-content:center; position:relative; padding:10px 6px; }
+    .topbar .nav { position:absolute; right:18px; top:8px; display:flex; gap:8px; }
+    .nav-link { display:inline-block; padding:8px 14px; color: #fff; background: linear-gradient(180deg,var(--primary-600),var(--primary)); border-radius:999px; text-decoration:none; font-weight:600; box-shadow: 0 4px 10px rgba(106,27,154,0.08); }
+    .nav-link.secondary { background: transparent; color:var(--primary); border:1px solid rgba(106,27,154,0.12); }
+
+    /* Cards and sections */
+    .section-card { background: var(--card); border-radius:12px; padding:16px; box-shadow: 0 6px 18px rgba(99, 33, 129, 0.04); border: 1px solid rgba(120,80,140,0.06); }
+
+    /* File uploader and textarea sizing harmonization */
+    .stFileUploader, .stTextArea, .stSelectBox { width:100% !important; }
+    .stTextArea textarea { min-height:180px !important; }
+
+    /* Buttons - primary purple */
+    .stButton>button { background: var(--primary) !important; color: #fff !important; padding: 12px 22px !important; border-radius: 10px !important; font-weight:700 !important; }
+
+    /* Small info cards */
+    .info-card { background: linear-gradient(180deg, rgba(122,81,158,0.06), rgba(250,245,255,0.8)); border-radius:10px; padding:12px; text-align:center; }
+    .info-card h4 { margin:0; color:var(--primary); }
+    .info-card p { margin:4px 0 0 0; color:var(--muted); }
+
+    /* Model selection panel */
+    .model-panel { display:flex; flex-direction:column; align-items:center; gap:12px; padding-top:12px; }
+
+    /* Responsive tweaks */
+    @media (max-width: 900px) {
+        .topbar .nav { position:static; order:2; margin-top:8px; }
+        .brand h1 { font-size:28px }
     }
-    /* Light theme and layout overrides */
-    body {
-        background-color: #ffffff;
-        color: #222222;
-    }
-    /* Top row: title centered, nav at right */
-    .top-row { display:flex; align-items:center; justify-content:center; position:relative; padding:12px 0; }
-    .top-row .title { flex:1; text-align:center; }
-    .top-row .nav { position:absolute; right:20px; top:8px; }
-    .nav-btn { background:#1E90FF; color:#fff; padding:8px 12px; margin-left:8px; border-radius:8px; text-decoration:none; font-weight:600; }
-    .nav-btn:hover { opacity:0.95; }
-    /* Make main Streamlit buttons larger and blue */
-    .stButton>button {
-        background-color: #1E90FF !important;
-        color: white !important;
-        padding: 12px 20px !important;
-        border-radius: 10px !important;
-        font-weight: 600 !important;
-    }
-    /* TextArea and FileUploader width harmonization */
-    textarea, .stFileUploader { width:100% !important; }
-    .stTextArea textarea { min-height: 160px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -99,13 +104,7 @@ def initialize_services():
 
 def main():
     # Header (centered) - removed logo and top divider per UI request
-    st.markdown(
-        "<div style='text-align:center; margin-top:8px'>\n"
-        "<h1 class='header-blue'>🛡️ iSecurify SOC Report Agent</h1>\n"
-        "<div style='font-style:italic; color:#555;'>Professional Forensic Investigation & Report Generation</div>\n"
-        "</div>",
-        unsafe_allow_html=True
-    )
+        # (Header removed — topbar renders brand and nav)
     
     # Initialize services
     services = initialize_services()
@@ -171,52 +170,59 @@ def main():
     if 'page' not in st.session_state:
         st.session_state.page = 'generate'
 
-    st.markdown(
-        "<div class='top-row'>"
-        "<div class='title'><h1 class='header-blue' style='margin:0;'>🛡️ iSecurify SOC Report Agent</h1><div style='font-style:italic; color:#555;'>Professional Forensic Investigation & Report Generation</div></div>"
-        "<div class='nav'>"
-        "<a class='nav-btn' href='?page=generate'>Generate Report</a>"
-        "<a class='nav-btn' href='?page=history'>Report History</a>"
-        "<a class='nav-btn' href='?page=about'>About</a>"
-        "</div></div>", unsafe_allow_html=True
-    )
+        # Topbar (brand + nav)
+        st.markdown(
+            "<div class='topbar'>"
+            "<div class='brand'><h1>iSecurify</h1><p>Professional Forensic Investigation &amp; Report Generation</p></div>"
+            "<div class='nav'>"
+            "<a class='nav-link' href='?page=generate'>Generate</a>"
+            "<a class='nav-link secondary' href='?page=history'>History</a>"
+            "<a class='nav-link secondary' href='?page=about'>About</a>"
+            "</div></div>", unsafe_allow_html=True
+        )
 
     # Page content
     if st.session_state.page == 'generate':
         st.markdown("<h2 style='text-align:center; margin-top:6px;'>Generate New Forensic Report</h2>", unsafe_allow_html=True)
 
-        # Two-column layout: Input Data (left) and Analyst (right)
+        # Two-column layout: Input Data (left) and Analyst (right) — wrapped in cards
         col1, col2 = st.columns([1,1])
 
         with col1:
+            st.markdown("<div class='section-card'>", unsafe_allow_html=True)
             st.markdown("### 📂 Input Data")
-            
             # File selection
             input_file = st.file_uploader(
                 "Select CSV log file",
                 type=['csv', 'txt'],
                 help="Upload forensic log data (CSV or TXT)"
             )
-            
             if input_file:
                 st.success(f"✓ File loaded: {input_file.name}")
-            
+            st.markdown("</div>", unsafe_allow_html=True)
+
         # Analyst insight on the right column
         with col2:
+            st.markdown("<div class='section-card'>", unsafe_allow_html=True)
             st.markdown("### 🧑‍💻 Analyst Insight")
             analyst_insight = st.text_area(
                 "Analyst Insight (Optional)",
                 placeholder="Enter initial observations or hypothesis...",
-                height=160,
+                height=180,
                 help="Provide context to guide the AI analysis"
             )
+            st.markdown("</div>", unsafe_allow_html=True)
 
         # Centered Run Pipeline button below both columns (bigger styled button)
-        st.markdown("<div style='text-align:center; margin-top:18px;'>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center; margin-top:18px; margin-bottom:8px;'>", unsafe_allow_html=True)
         run_col1, run_col2, run_col3 = st.columns([1,2,1])
         with run_col2:
+            st.markdown("<div class='section-card'>", unsafe_allow_html=True)
             if st.button("🚀 Generate Report", key="run_generate"):
                 st.session_state._trigger_run = True
+            # small status placeholder below the button
+            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
         # Placeholder for model selection - moved to bottom of page and rendered later
@@ -289,38 +295,36 @@ def main():
                     st.session_state.running = False
                     if temp_file.exists():
                         temp_file.unlink()
-        # --- Model Selection panel (moved to bottom of page, centered) ---
-        st.markdown("<hr style='margin-top:24px;margin-bottom:12px;'>", unsafe_allow_html=True)
-        st.markdown("<h3 style='text-align:center;'>👩‍💻 Model Selection</h3>", unsafe_allow_html=True)
-        # center the selectbox and info cards
-        sel_c1, sel_c2, sel_c3 = st.columns([1,2,1])
-        with sel_c2:
-            with st.expander("🔍 Debug: Model Detection"):
-                st.write(f"**Available models from Ollama:** {available_models}")
-                st.write(f"**Compatible models count:** {len(compatible_models)}")
-                st.write(f"**GPU Info:** {hw_summary['gpu_count']} GPUs, {hw_summary['total_vram_gb']}GB VRAM")
+        # --- Model Selection panel (bottom) ---
+        st.markdown("<div class='section-card' style='margin-top:18px;'>", unsafe_allow_html=True)
+        st.markdown("<div class='model-panel'><h3>👩‍💻 Model Selection</h3>", unsafe_allow_html=True)
+        with st.expander("🔍 Debug: Model Detection"):
+            st.write(f"**Available models from Ollama:** {available_models}")
+            st.write(f"**Compatible models count:** {len(compatible_models)}")
+            st.write(f"**GPU Info:** {hw_summary['gpu_count']} GPUs, {hw_summary['total_vram_gb']}GB VRAM")
 
-            if not available_models:
-                st.error("❌ No models found in Ollama. See sidebar instructions to install/start Ollama.")
-            elif not compatible_models:
-                st.error("❌ Models found but none compatible with current hardware.")
+        if not available_models:
+            st.error("❌ No models found in Ollama. See sidebar instructions to install/start Ollama.")
+        elif not compatible_models:
+            st.error("❌ Models found but none compatible with current hardware.")
+        else:
+            phase3_models = [m for m in compatible_models if m.get('suitable_for_phase3')]
+            if phase3_models:
+                model_options = {f"{m['name']} ({m.get('vram_needed_gb','?')}GB VRAM)": m['name'] for m in phase3_models}
+                selected_label = st.selectbox("Select Model for Report Generation (Phase 3)", options=list(model_options.keys()))
+                st.session_state.selected_model = model_options.get(selected_label)
+                # centered info cards
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    st.markdown(f"<div class='info-card'><h4>VRAM</h4><p>{phase3_models[0].get('vram_available_gb','?')} GB available</p></div>", unsafe_allow_html=True)
+                with c2:
+                    st.markdown(f"<div class='info-card'><h4>Context</h4><p>{phase3_models[0].get('context_window','?')} tokens</p></div>", unsafe_allow_html=True)
+                with c3:
+                    st.markdown(f"<div class='info-card'><h4>Safety</h4><p>{phase3_models[0].get('vram_margin_percent',0):.1f}% margin</p></div>", unsafe_allow_html=True)
             else:
-                phase3_models = [m for m in compatible_models if m.get('suitable_for_phase3')]
-                if phase3_models:
-                    model_options = {f"{m['name']} ({m.get('vram_needed_gb','?')}GB VRAM)": m['name'] for m in phase3_models}
-                    selected_label = st.selectbox("Select Model for Report Generation (Phase 3)", options=list(model_options.keys()))
-                    # store the selected model name for the run
-                    st.session_state.selected_model = model_options.get(selected_label)
-                    # show details centered
-                    info_a, info_b, info_c = st.columns(3)
-                    with info_a:
-                        st.info(f"🎯 VRAM: {phase3_models[0].get('vram_available_gb','?')}GB available")
-                    with info_b:
-                        st.info(f"📏 Context: {phase3_models[0].get('context_window','?')} tokens")
-                    with info_c:
-                        st.info(f"✅ Safety: {phase3_models[0].get('vram_margin_percent',0):.1f}% margin")
-                else:
-                    st.warning("⚠️ Compatible models available but none are suitable for Phase 3 (14B/8B required).")
+                st.warning("⚠️ Compatible models available but none are suitable for Phase 3 (14B/8B required).")
+
+        st.markdown("</div></div>", unsafe_allow_html=True)
     
     if st.session_state.page == 'history':
         st.markdown("## 📋 Report History")
@@ -395,7 +399,6 @@ def main():
     
     if st.session_state.page == 'about':
         st.markdown("## About iSecurify SOC Report Agent")
-        
         st.markdown("""
         ### 🎯 Purpose
         Automated forensic investigation and professional SOC report generation using AI-powered analysis.
