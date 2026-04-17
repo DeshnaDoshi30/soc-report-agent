@@ -5,7 +5,7 @@ Determines which models can run based on GPU/RAM + input size
 import logging
 import subprocess
 import json
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 import psutil
 
 logger = logging.getLogger(__name__)
