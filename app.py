@@ -56,6 +56,28 @@ st.markdown("""
         border-left: 4px solid #F44336;
         border-radius: 4px;
     }
+    /* Light theme and layout overrides */
+    body {
+        background-color: #ffffff;
+        color: #222222;
+    }
+    /* Top row: title centered, nav at right */
+    .top-row { display:flex; align-items:center; justify-content:center; position:relative; padding:12px 0; }
+    .top-row .title { flex:1; text-align:center; }
+    .top-row .nav { position:absolute; right:20px; top:8px; }
+    .nav-btn { background:#1E90FF; color:#fff; padding:8px 12px; margin-left:8px; border-radius:8px; text-decoration:none; font-weight:600; }
+    .nav-btn:hover { opacity:0.95; }
+    /* Make main Streamlit buttons larger and blue */
+    .stButton>button {
+        background-color: #1E90FF !important;
+        color: white !important;
+        padding: 12px 20px !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+    }
+    /* TextArea and FileUploader width harmonization */
+    textarea, .stFileUploader { width:100% !important; }
+    .stTextArea textarea { min-height: 160px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -132,24 +154,27 @@ def main():
         st.write(f"**Unique Hosts:** {stats.get('unique_hosts', 0)}")
         st.write(f"**Avg Time:** {stats.get('avg_processing_time', 0):.1f}s")
     
-    # Top navigation buttons (centered)
+    # Top navigation (title centered, nav buttons at top-right using query params)
+    params = st.experimental_get_query_params()
+    qpage = params.get('page', [None])[0]
+    if qpage:
+        st.session_state.page = qpage
     if 'page' not in st.session_state:
         st.session_state.page = 'generate'
 
-    nav_col1, nav_col2, nav_col3, nav_col4 = st.columns([1,1,1,4])
-    with nav_col1:
-        if st.button('Generate Report'):
-            st.session_state.page = 'generate'
-    with nav_col2:
-        if st.button('Report History'):
-            st.session_state.page = 'history'
-    with nav_col3:
-        if st.button('About'):
-            st.session_state.page = 'about'
+    st.markdown(
+        "<div class='top-row'>"
+        "<div class='title'><h1 class='header-blue' style='margin:0;'>🛡️ iSecurify SOC Report Agent</h1><div style='font-style:italic; color:#555;'>Professional Forensic Investigation & Report Generation</div></div>"
+        "<div class='nav'>"
+        "<a class='nav-btn' href='?page=generate'>Generate Report</a>"
+        "<a class='nav-btn' href='?page=history'>Report History</a>"
+        "<a class='nav-btn' href='?page=about'>About</a>"
+        "</div></div>", unsafe_allow_html=True
+    )
 
     # Page content
     if st.session_state.page == 'generate':
-        st.markdown("<h2 style='text-align:center;'>Generate New Forensic Report</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align:center; margin-top:6px;'>Generate New Forensic Report</h2>", unsafe_allow_html=True)
 
         # Two-column layout: Input Data (left) and Analyst (right)
         col1, col2 = st.columns([1,1])
@@ -177,7 +202,7 @@ def main():
                 help="Provide context to guide the AI analysis"
             )
 
-        # Centered Run Pipeline button below both columns
+        # Centered Run Pipeline button below both columns (bigger styled button)
         st.markdown("<div style='text-align:center; margin-top:18px;'>", unsafe_allow_html=True)
         run_col1, run_col2, run_col3 = st.columns([1,2,1])
         with run_col2:
