@@ -114,6 +114,19 @@ def main():
         with col2:
             st.metric("Available RAM", f"{hw_summary['available_ram_gb']} GB")
         
+        # Warning if GPU detection failed
+        if hw_summary['gpu_count'] == 0:
+            st.warning("""
+            ⚠️ **GPU detection unavailable**
+            
+            This is OK if:
+            - nvidia-smi isn't in PATH
+            - System has enough RAM for models
+            - Ollama handles GPU automatically
+            
+            Models will still work if system RAM is sufficient.
+            """)
+        
         st.markdown("### 📊 Database Stats")
         stats = db.get_stats()
         st.write(f"**Total Reports:** {stats.get('total_reports', 0)}")
@@ -153,14 +166,21 @@ def main():
             
             # Get compatible models
             compatible_models = detector.get_compatible_models()
+            available_models = detector.get_available_models()
             
             # Initialize variables
             model_options = {}
             selected_model = None
             
-            if not compatible_models:
+            # Debug info
+            with st.expander("🔍 Debug: Model Detection"):
+                st.write(f"**Available models from Ollama:** {available_models}")
+                st.write(f"**Compatible models:** {len(compatible_models)}")
+                st.write(f"**GPU Info:** {hw_summary['gpu_count']} GPUs, {hw_summary['total_vram_gb']}GB VRAM")
+            
+            if not available_models:
                 st.error("""
-                ❌ **No compatible models found.** 
+                ❌ **No models found in Ollama at all.**
                 
                 **On your Linux server, run:**
                 ```bash
@@ -170,6 +190,19 @@ def main():
                 ollama serve &                        # Start Ollama in background
                 ```
                 Then refresh this page.
+                """)
+            elif not compatible_models:
+                st.error(f"""
+                ❌ **{len(available_models)} model(s) found but not compatible with current hardware.**
+                
+                **Models found:** {', '.join(available_models)}
+                **Your system:** {hw_summary['gpu_count']} GPUs, {hw_summary['total_vram_gb']}GB VRAM, {hw_summary['available_ram_gb']}GB RAM
+                
+                **Troubleshooting:**
+                - Check system has enough RAM
+                - Verify nvidia-smi works (for GPU detection): `nvidia-smi`
+                - Check Ollama is running: `ollama list`
+                - Try restarting Ollama: `pkill ollama && ollama serve &`
                 """)
             else:
                 # Filter for Phase 3 suitable models (14b, 8b)
@@ -200,7 +233,19 @@ def main():
                         with col_c:
                             st.info(f"✅ Safety: {model_info['vram_margin_percent']:.1f}% margin")
                 else:
-                    st.warning("⚠️ No suitable models for Phase 3 (need 14b/8b variants)")
+                    st.warning(f"""
+                    ⚠️ **{len(compatible_models)} compatible models found but NONE suitable for Phase 3 (report generation).**
+                    
+                    **Need:** 14B or 8B parameter models
+                    **Available:** {', '.join([m['name'] for m in compatible_models])}
+                    
+                    **Pull a Phase 3 model:**
+                    ```bash
+                    ollama pull deepseek-r1:14b     # Recommended
+                    # or
+                    ollama pull deepseek-r1:8b      # Lighter variant
+                    ```
+                    """)
         
         with col2:
             st.markdown("### 🚀 Run Pipeline")

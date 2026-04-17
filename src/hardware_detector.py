@@ -110,6 +110,9 @@ class HardwareDetector:
         total_vram_gb = self.get_total_vram()
         available_ram_gb = self.sys_mem.get('available_mb', 0) / 1024
         
+        # If GPU detection failed but Ollama has models, allow them anyway (fallback mode)
+        gpu_detection_failed = total_vram_gb == 0 and len(self.gpu_info) == 0
+        
         compatible = []
         
         for model_name in available_models:
@@ -131,14 +134,29 @@ class HardwareDetector:
             vram_needed = model_spec['vram_gb']
             ram_needed = model_spec['ram_gb']
             
-            if total_vram_gb >= vram_needed and available_ram_gb >= ram_needed:
-                # Calculate safety margin
-                vram_margin = ((total_vram_gb - vram_needed) / total_vram_gb * 100) if total_vram_gb > 0 else 0
-                
+            # Allow model if:
+            # 1. GPU detection works AND we have enough VRAM, OR
+            # 2. GPU detection failed but system has enough RAM (fallback mode)
+            can_run = False
+            vram_margin = 0
+            
+            if not gpu_detection_failed:
+                # GPU detection worked - check VRAM
+                if total_vram_gb >= vram_needed and available_ram_gb >= ram_needed:
+                    can_run = True
+                    vram_margin = ((total_vram_gb - vram_needed) / total_vram_gb * 100) if total_vram_gb > 0 else 0
+            else:
+                # GPU detection failed - allow if system RAM is sufficient (warning will be shown)
+                if available_ram_gb >= (vram_needed + ram_needed):
+                    can_run = True
+                    vram_margin = 50  # Default to 50% for unknown hardware
+                    logger.warning(f"⚠️  GPU detection failed - allowing {model_name} based on system RAM")
+            
+            if can_run:
                 compatible.append({
                     'name': model_name,
                     'vram_needed_gb': vram_needed,
-                    'vram_available_gb': round(total_vram_gb, 2),
+                    'vram_available_gb': round(total_vram_gb, 2) if not gpu_detection_failed else round(available_ram_gb, 2),
                     'vram_margin_percent': round(vram_margin, 1),
                     'context_window': model_spec['context'],
                     'suitable_for_phase3': True if '14b' in model_name or '8b' in model_name else False
