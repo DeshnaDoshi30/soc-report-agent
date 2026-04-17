@@ -155,8 +155,17 @@ def main():
         st.write(f"**Avg Time:** {stats.get('avg_processing_time', 0):.1f}s")
     
     # Top navigation (title centered, nav buttons at top-right using query params)
-    params = st.experimental_get_query_params()
-    qpage = params.get('page', [None])[0]
+    # Use a safe fallback if `experimental_get_query_params` is not available in this Streamlit build
+    get_qparams = getattr(st, 'experimental_get_query_params', None)
+    if callable(get_qparams):
+        try:
+            params = get_qparams()
+        except Exception:
+            params = {}
+    else:
+        params = {}
+
+    qpage = params.get('page', [None])[0] if params else None
     if qpage:
         st.session_state.page = qpage
     if 'page' not in st.session_state:
