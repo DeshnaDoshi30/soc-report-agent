@@ -1,19 +1,16 @@
 """
-SOC Report Agent - Streamlit Web UI
-Professional interface for forensic report generation
+SOC Report Agent — Streamlit Web UI
+Navy + slate enterprise theme for internal SOC analyst use.
 Run: streamlit run app.py
 """
+
 import streamlit as st
 import sys
 import logging
 from pathlib import Path
-from datetime import datetime
 import time
-import subprocess
 import os
-import json
 
-# Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.hardware_detector import HardwareDetector
@@ -21,416 +18,676 @@ from src.report_database import ReportDatabase
 from src.report_organizer import ReportOrganizer
 from src.pipeline import UnifiedPipeline
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Page config
+# ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="iSecurify SOC Report Agent",
+    page_title="iSecurify · SOC Report Agent",
     page_icon="🛡️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-# Custom CSS for professional styling (purple theme)
+# ── Theme CSS ─────────────────────────────────────────────────────────────────
 st.markdown("""
-    <style>
-    :root{
-        --primary: #6A1B9A; /* deep purple */
-        --primary-600: #7B1FA2;
-        --accent: #9C27B0;
-        --muted: #6b6b6b;
-        --surface: #ffffff;
-        --card: #FBF7FF;
-    }
-    html, body {
-        background: var(--surface);
-        color: #222224;
-        font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-    }
-    .main { max-width: 1280px; margin: 0 auto; padding: 12px 18px; }
-    .brand { text-align:center; }
-    .brand h1 { color: var(--primary); margin:0; font-size:36px; letter-spacing: -0.6px; }
-    .brand p { margin:4px 0 0 0; color:var(--muted); font-style:italic }
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 
-    /* Topbar container: title centered, nav on right */
-    .topbar { display:flex; align-items:center; justify-content:center; position:relative; padding:10px 6px; }
-    .topbar .nav { position:absolute; right:18px; top:8px; display:flex; gap:8px; }
-    .nav-link { display:inline-block; padding:8px 14px; color: #fff; background: linear-gradient(180deg,var(--primary-600),var(--primary)); border-radius:999px; text-decoration:none; font-weight:600; box-shadow: 0 4px 10px rgba(106,27,154,0.08); }
-    .nav-link.secondary { background: transparent; color:var(--primary); border:1px solid rgba(106,27,154,0.12); }
+:root {
+    --navy-950: #060F1C;
+    --navy-900: #0B1E35;
+    --navy-800: #112848;
+    --navy-700: #163258;
+    --blue-500: #1D6FEB;
+    --blue-400: #3B8BFF;
+    --blue-100: rgba(29,111,235,0.10);
+    --blue-border: rgba(29,111,235,0.20);
+    --slate-50:  #F7F9FC;
+    --slate-100: #EEF2F7;
+    --slate-200: #DDE3ED;
+    --slate-400: #8898B0;
+    --slate-600: #4A5A70;
+    --slate-800: #1C2B3A;
+    --success:   #16A34A;
+    --warning:   #CA8A04;
+    --error:     #DC2626;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+}
 
-    /* Cards and sections */
-    .section-card { background: var(--card); border-radius:12px; padding:16px; box-shadow: 0 6px 18px rgba(99, 33, 129, 0.04); border: 1px solid rgba(120,80,140,0.06); }
+/* ── Base ── */
+html, body, [class*="css"] { font-family: var(--sans) !important; }
+.main .block-container {
+    background: var(--slate-50);
+    max-width: 900px;
+    padding: 1.8rem 2.2rem 4rem;
+}
 
-    /* File uploader and textarea sizing harmonization */
-    .stFileUploader, .stTextArea, .stSelectBox { width:100% !important; }
-    .stTextArea textarea { min-height:180px !important; }
+/* ── Sidebar ── */
+section[data-testid="stSidebar"] {
+    background: var(--navy-900) !important;
+    border-right: 1px solid rgba(255,255,255,0.06) !important;
+    min-width: 215px !important;
+    max-width: 230px !important;
+}
+section[data-testid="stSidebar"] * { color: #A8BACE !important; font-family: var(--sans) !important; }
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3 { color: #E4EDF6 !important; }
+section[data-testid="stSidebar"] .stMetric         { background: rgba(255,255,255,0.04) !important; border-radius: 6px; padding: 8px 10px; }
+section[data-testid="stSidebar"] .stMetric label   { color: #6A7F96 !important; font-size: 11px !important; }
+section[data-testid="stSidebar"] .stMetric [data-testid="stMetricValue"] { color: #E4EDF6 !important; font-family: var(--mono) !important; font-size: 18px !important; }
+section[data-testid="stSidebar"] .stTextInput input {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    color: #A8BACE !important;
+    font-family: var(--mono) !important;
+    font-size: 12px !important;
+    border-radius: 5px;
+}
+section[data-testid="stSidebar"] .stButton > button {
+    background: transparent !important;
+    border: none !important;
+    color: #7A93AC !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+    padding: 7px 10px !important;
+    border-radius: 5px !important;
+    width: 100% !important;
+    transition: background 0.15s, color 0.15s;
+}
+section[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(29,111,235,0.10) !important;
+    color: #93C5FD !important;
+}
 
-    /* Buttons - primary purple */
-    .stButton>button { background: var(--primary) !important; color: #fff !important; padding: 12px 22px !important; border-radius: 10px !important; font-weight:700 !important; }
+/* Active nav item — applied via a wrapper class we inject */
+.nav-active .stButton > button {
+    background: rgba(29,111,235,0.15) !important;
+    color: #7EC8FF !important;
+    font-weight: 600 !important;
+}
 
-    /* Small info cards */
-    .info-card { background: linear-gradient(180deg, rgba(122,81,158,0.06), rgba(250,245,255,0.8)); border-radius:10px; padding:12px; text-align:center; }
-    .info-card h4 { margin:0; color:var(--primary); }
-    .info-card p { margin:4px 0 0 0; color:var(--muted); }
+/* ── Wordmark ── */
+.wordmark {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding-bottom: 1.1rem;
+    margin-bottom: 1.4rem;
+    border-bottom: 1px solid var(--slate-200);
+}
+.wordmark-name {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--navy-900);
+    letter-spacing: -0.3px;
+}
+.wordmark-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--blue-500);
+    background: var(--blue-100);
+    border: 1px solid var(--blue-border);
+    border-radius: 3px;
+    padding: 2px 6px;
+}
 
-    /* Model selection panel */
-    .model-panel { display:flex; flex-direction:column; align-items:center; gap:12px; padding-top:12px; }
+/* ── Page title ── */
+.page-title {
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--slate-800);
+    letter-spacing: -0.1px;
+    margin-bottom: 0;
+}
+.page-divider {
+    border: none;
+    border-top: 1px solid var(--slate-200);
+    margin: 10px 0 20px;
+}
 
-    /* Responsive tweaks */
-    @media (max-width: 900px) {
-        .topbar .nav { position:static; order:2; margin-top:8px; }
-        .brand h1 { font-size:28px }
-    }
-    </style>
+/* ── Expander (section card) ── */
+.streamlit-expanderHeader {
+    background: #fff !important;
+    border: 1px solid var(--slate-200) !important;
+    border-radius: 7px !important;
+    font-family: var(--sans) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--slate-600) !important;
+    padding: 12px 16px !important;
+}
+.streamlit-expanderHeader:hover { border-color: var(--blue-border) !important; }
+.streamlit-expanderContent {
+    border: 1px solid var(--slate-200) !important;
+    border-top: none !important;
+    border-radius: 0 0 7px 7px !important;
+    background: #fff !important;
+    padding: 18px 20px !important;
+}
+div[data-testid="stExpander"] { margin-bottom: 10px; }
+
+/* ── Buttons ── */
+.stButton > button {
+    background: var(--navy-800) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-family: var(--sans) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    padding: 9px 18px !important;
+    transition: background 0.15s;
+    letter-spacing: 0.1px;
+}
+.stButton > button:hover { background: var(--navy-700) !important; }
+
+/* ── Inputs ── */
+.stTextArea textarea, .stTextInput input, .stSelectbox select {
+    border: 1px solid var(--slate-200) !important;
+    border-radius: 6px !important;
+    font-family: var(--sans) !important;
+    font-size: 13px !important;
+    color: var(--slate-800) !important;
+    background: #fff !important;
+}
+.stTextArea textarea:focus, .stTextInput input:focus {
+    border-color: var(--blue-500) !important;
+    box-shadow: 0 0 0 3px rgba(29,111,235,0.08) !important;
+}
+.stFileUploader {
+    border: 1px dashed var(--slate-200) !important;
+    border-radius: 7px !important;
+    background: #fff !important;
+}
+
+/* ── Metrics in main area ── */
+.main [data-testid="metric-container"] {
+    background: var(--slate-100);
+    border: 1px solid var(--slate-200);
+    border-radius: 6px;
+    padding: 10px 14px;
+}
+.main [data-testid="metric-container"] label { font-size: 11px !important; color: var(--slate-400) !important; font-family: var(--mono) !important; }
+.main [data-testid="stMetricValue"] { font-family: var(--mono) !important; font-size: 18px !important; color: var(--navy-800) !important; }
+
+/* ── Step indicators ── */
+.steps-wrap { display:flex; align-items:center; padding: 12px 0; }
+.step-node  { display:flex; flex-direction:column; align-items:center; flex: 0 0 auto; }
+.step-circle {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 2px solid var(--slate-200);
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    color: var(--slate-400);
+    transition: all 0.3s;
+}
+.step-circle.active  { border-color: var(--blue-500); background: var(--blue-100); color: var(--blue-500); box-shadow: 0 0 0 4px rgba(29,111,235,0.10); }
+.step-circle.done    { border-color: var(--success); background: var(--success); color: #fff; }
+.step-circle.error   { border-color: var(--error);   background: var(--error);   color: #fff; }
+.step-label  { font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--slate-600); margin-top: 5px; white-space:nowrap; }
+.step-sub    { font-family: var(--mono); font-size: 10px; color: var(--slate-400); white-space:nowrap; }
+.step-line   { flex: 1; height: 2px; background: var(--slate-200); margin: 0 6px; margin-bottom: 18px; transition: background 0.3s; min-width: 40px; }
+.step-line.done   { background: var(--success); }
+.step-line.active { background: linear-gradient(90deg, var(--success) 0%, var(--blue-400) 100%); }
+
+/* ── Alerts ── */
+.stAlert { border-radius: 6px !important; font-family: var(--sans) !important; font-size: 13px !important; }
+
+/* ── Download buttons ── */
+.stDownloadButton > button {
+    background: var(--slate-100) !important;
+    color: var(--navy-800) !important;
+    border: 1px solid var(--slate-200) !important;
+    font-size: 12px !important;
+    padding: 7px 14px !important;
+}
+.stDownloadButton > button:hover { background: var(--slate-200) !important; }
+
+hr { border-color: var(--slate-200) !important; }
+
+/* ── Caption / small text ── */
+.stCaption { font-family: var(--mono) !important; font-size: 11px !important; color: var(--slate-400) !important; }
+</style>
 """, unsafe_allow_html=True)
 
-# Initialize session state
-if 'running' not in st.session_state:
-    st.session_state.running = False
-if 'logs' not in st.session_state:
-    st.session_state.logs = []
 
-def initialize_services():
-    """Initialize detectors and databases."""
-    ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
-    
+# ── Session state ─────────────────────────────────────────────────────────────
+if "page" not in st.session_state:
+    st.session_state.page = "generate"
+if "selected_model" not in st.session_state:
+    st.session_state.selected_model = None
+
+
+# ── Services (cached) ─────────────────────────────────────────────────────────
+@st.cache_resource
+def get_services():
+    ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
     return {
-        'detector': HardwareDetector(ollama_host),
-        'db': ReportDatabase(),
-        'organizer': ReportOrganizer()
+        "detector": HardwareDetector(ollama_host),
+        "db":       ReportDatabase(),
+        "organizer": ReportOrganizer(),
     }
 
-def main():
-    # Header (centered) - removed logo and top divider per UI request
-        # (Header removed — topbar renders brand and nav)
-    
-    # Initialize services
-    services = initialize_services()
-    detector = services['detector']
-    db = services['db']
-    organizer = services['organizer']
-    
-    # Sidebar
-    with st.sidebar:
-        st.markdown("### ⚙️ Configuration")
-        
-        # Ollama Host
-        ollama_host = st.text_input(
-            "Ollama Host",
-            value=os.getenv('OLLAMA_HOST', 'http://localhost:11434'),
-            help="Ollama server address"
+
+# ── Step indicator renderer ───────────────────────────────────────────────────
+def render_steps(phases: dict):
+    """
+    phases = {
+        1: {"label": "Extraction",  "sub": "Qwen 7B",   "status": "idle"|"active"|"done"|"error"},
+        2: {"label": "Embedding",   "sub": "Nomic",      "status": ...},
+        3: {"label": "Report Gen",  "sub": "DeepSeek-R1","status": ...},
+    }
+    """
+    items = list(phases.items())
+    parts = []
+
+    for i, (num, p) in enumerate(items):
+        s = p["status"]
+        css = {"active": "active", "done": "done", "error": "error"}.get(s, "")
+        icon = "✓" if s == "done" else ("✕" if s == "error" else str(num))
+
+        parts.append(f"""
+        <div class="step-node">
+            <div class="step-circle {css}">{icon}</div>
+            <div class="step-label">{p['label']}</div>
+            <div class="step-sub">{p['sub']}</div>
+        </div>""")
+
+        if i < len(items) - 1:
+            line_css = "done" if s == "done" else ("active" if s == "active" else "")
+            parts.append(f'<div class="step-line {line_css}"></div>')
+
+    html = "<div class='steps-wrap'>" + "".join(parts) + "</div>"
+    st.markdown(html, unsafe_allow_html=True)
+
+
+# ── Pages ─────────────────────────────────────────────────────────────────────
+def page_generate(services):
+    detector = services["detector"]
+    db       = services["db"]
+    organizer = services["organizer"]
+    hw       = detector.get_hardware_summary()
+
+    # Section: Input Data
+    with st.expander("📂  Input Data", expanded=True):
+        input_file = st.file_uploader(
+            "Upload forensic log file",
+            type=["csv", "txt"],
+            help="CSV or TXT exported from SIEM / endpoint agent",
+            label_visibility="collapsed",
         )
-        
-        # Hardware Status
-        st.markdown("### 🎮 Hardware Status")
-        hw_summary = detector.get_hardware_summary()
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("GPU Count", hw_summary['gpu_count'])
-            st.metric("Available VRAM", f"{hw_summary['total_vram_gb']} GB")
-        with col2:
-            st.metric("Available RAM", f"{hw_summary['available_ram_gb']} GB")
-        
-        # Warning if GPU detection failed
-        if hw_summary['gpu_count'] == 0:
-            st.warning("""
-            ⚠️ **GPU detection unavailable**
-            
-            This is OK if:
-            - nvidia-smi isn't in PATH
-            - System has enough RAM for models
-            - Ollama handles GPU automatically
-            
-            Models will still work if system RAM is sufficient.
-            """)
-        
-        st.markdown("### 📊 Database Stats")
-        stats = db.get_stats()
-        st.write(f"**Total Reports:** {stats.get('total_reports', 0)}")
-        st.write(f"**Unique Hosts:** {stats.get('unique_hosts', 0)}")
-        st.write(f"**Avg Time:** {stats.get('avg_processing_time', 0):.1f}s")
-    
-    # Top navigation (title centered, nav buttons at top-right using query params)
-    # Use a safe fallback if `experimental_get_query_params` is not available in this Streamlit build
-    get_qparams = getattr(st, 'experimental_get_query_params', None)
-    if callable(get_qparams):
-        try:
-            params = get_qparams()
-        except Exception:
-            params = {}
-    else:
-        params = {}
+        if input_file:
+            st.success(f"Loaded **{input_file.name}** — {len(input_file.getvalue()):,} bytes")
 
-    qpage = params.get('page', [None])[0] if params else None
-    if qpage:
-        st.session_state.page = qpage
-    if 'page' not in st.session_state:
-        st.session_state.page = 'generate'
-
-        # Topbar (brand + nav)
-        st.markdown(
-            "<div class='topbar'>"
-            "<div class='brand'><h1>iSecurify</h1><p>Professional Forensic Investigation &amp; Report Generation</p></div>"
-            "<div class='nav'>"
-            "<a class='nav-link' href='?page=generate'>Generate</a>"
-            "<a class='nav-link secondary' href='?page=history'>History</a>"
-            "<a class='nav-link secondary' href='?page=about'>About</a>"
-            "</div></div>", unsafe_allow_html=True
+    # Section: Analyst Context
+    with st.expander("🧑‍💻  Analyst Context", expanded=True):
+        analyst_insight = st.text_area(
+            "Observations",
+            placeholder=(
+                "e.g. Suspected lateral movement from 192.168.1.45 between "
+                "02:00–04:00 UTC. Process hollowing observed on svchost.exe."
+            ),
+            height=120,
+            label_visibility="collapsed",
         )
 
-    # Page content
-    if st.session_state.page == 'generate':
-        st.markdown("<h2 style='text-align:center; margin-top:6px;'>Generate New Forensic Report</h2>", unsafe_allow_html=True)
+    # Section: Model Selection
+    compatible_models = detector.get_compatible_models()
+    available_models  = detector.get_available_models()
 
-        # Two-column layout: Input Data (left) and Analyst (right) — wrapped in cards
-        col1, col2 = st.columns([1,1])
-
-        with col1:
-            st.markdown("<div class='section-card'>", unsafe_allow_html=True)
-            st.markdown("### 📂 Input Data")
-            # File selection
-            input_file = st.file_uploader(
-                "Select CSV log file",
-                type=['csv', 'txt'],
-                help="Upload forensic log data (CSV or TXT)"
-            )
-            if input_file:
-                st.success(f"✓ File loaded: {input_file.name}")
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        # Analyst insight on the right column
-        with col2:
-            st.markdown("<div class='section-card'>", unsafe_allow_html=True)
-            st.markdown("### 🧑‍💻 Analyst Insight")
-            analyst_insight = st.text_area(
-                "Analyst Insight (Optional)",
-                placeholder="Enter initial observations or hypothesis...",
-                height=180,
-                help="Provide context to guide the AI analysis"
-            )
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        # Centered Run Pipeline button below both columns (bigger styled button)
-        st.markdown("<div style='text-align:center; margin-top:18px; margin-bottom:8px;'>", unsafe_allow_html=True)
-        run_col1, run_col2, run_col3 = st.columns([1,2,1])
-        with run_col2:
-            st.markdown("<div class='section-card'>", unsafe_allow_html=True)
-            if st.button("🚀 Generate Report", key="run_generate"):
-                st.session_state._trigger_run = True
-            # small status placeholder below the button
-            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        # Placeholder for model selection - moved to bottom of page and rendered later
-        # We'll collect compatible/available models now for later rendering
-        compatible_models = detector.get_compatible_models()
-        available_models = detector.get_available_models()
-        model_options = {}
-        selected_model = None
-        
-        # Run logic triggered by centered button
-        status_placeholder = st.empty()
-        if st.session_state.get('_trigger_run'):
-            # reset trigger
-            st.session_state._trigger_run = False
-
-            if not input_file:
-                st.error("❌ Please select an input file first")
-            else:
-                st.session_state.running = True
-                temp_file = Path("/tmp") / f"temp_{input_file.name}"
-                temp_file.write_bytes(input_file.getvalue())
-                try:
-                    with status_placeholder.container():
-                        st.info("🔄 Pipeline running...")
-
-                    # If no model selected in session, try to pick first compatible phase3
-                    sel_model = st.session_state.get('selected_model')
-                    if not sel_model and compatible_models:
-                        phase3_models = [m for m in compatible_models if m.get('suitable_for_phase3')]
-                        if phase3_models:
-                            sel_model = phase3_models[0]['name']
-
-                    if not sel_model:
-                        status_placeholder.error("❌ No model selected or compatible. Please select a model from the Model Selection panel below.")
-                    else:
-                        start_time = time.time()
-                        pipeline = UnifiedPipeline(
-                            input_file=str(temp_file),
-                            human_insight=analyst_insight,
-                            model=sel_model
-                        )
-                        success = pipeline.run()
-                        processing_time = time.time() - start_time
-
-                        if success:
-                            status_placeholder.success(f"✅ Report generated in {processing_time:.1f}s")
-                            report_path = organizer.archive_report(pipeline.run_id, "Analysis Host", "")
-                            if report_path:
-                                db.add_report(pipeline.run_id, "Analysis Host", model_used=selected_model, processing_time=processing_time, summary="Report generated successfully")
-                                st.markdown("#### 📊 Report Generated!")
-                                st.success(f"Run ID: `{pipeline.run_id}`")
-                                docx_path = report_path / f"SOC_Report_{pipeline.run_id}.docx"
-                                md_path = report_path / f"incident_report_{pipeline.run_id}.md"
-                                json_path = report_path / f"incident_{pipeline.run_id}.json"
-                                col_d1, col_d2, col_d3 = st.columns(3)
-                                with col_d1:
-                                    if docx_path.exists():
-                                        st.download_button("📄 Download DOCX", docx_path.read_bytes(), f"SOC_Report_{pipeline.run_id}.docx")
-                                with col_d2:
-                                    if md_path.exists():
-                                        st.download_button("📝 Download MD", md_path.read_text(), f"incident_report_{pipeline.run_id}.md")
-                                with col_d3:
-                                    if json_path.exists():
-                                        st.download_button("📑 Download JSON", json_path.read_text(), f"incident_{pipeline.run_id}.json")
-                        else:
-                            status_placeholder.error("❌ Pipeline failed")
-                except Exception as e:
-                    status_placeholder.error(f"❌ Error: {str(e)}")
-                finally:
-                    st.session_state.running = False
-                    if temp_file.exists():
-                        temp_file.unlink()
-        # --- Model Selection panel (bottom) ---
-        st.markdown("<div class='section-card' style='margin-top:18px;'>", unsafe_allow_html=True)
-        st.markdown("<div class='model-panel'><h3>👩‍💻 Model Selection</h3>", unsafe_allow_html=True)
-        with st.expander("🔍 Debug: Model Detection"):
-            st.write(f"**Available models from Ollama:** {available_models}")
-            st.write(f"**Compatible models count:** {len(compatible_models)}")
-            st.write(f"**GPU Info:** {hw_summary['gpu_count']} GPUs, {hw_summary['total_vram_gb']}GB VRAM")
-
+    with st.expander("🤖  Model Selection", expanded=False):
         if not available_models:
-            st.error("❌ No models found in Ollama. See sidebar instructions to install/start Ollama.")
+            st.error("No models detected in Ollama. Run `ollama pull <model>` and restart.")
         elif not compatible_models:
-            st.error("❌ Models found but none compatible with current hardware.")
+            st.warning("Models found but none compatible with current hardware profile.")
         else:
-            phase3_models = [m for m in compatible_models if m.get('suitable_for_phase3')]
+            phase3_models = [m for m in compatible_models if m.get("suitable_for_phase3")]
             if phase3_models:
-                model_options = {f"{m['name']} ({m.get('vram_needed_gb','?')}GB VRAM)": m['name'] for m in phase3_models}
-                selected_label = st.selectbox("Select Model for Report Generation (Phase 3)", options=list(model_options.keys()))
-                st.session_state.selected_model = model_options.get(selected_label)
-                # centered info cards
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    st.markdown(f"<div class='info-card'><h4>VRAM</h4><p>{phase3_models[0].get('vram_available_gb','?')} GB available</p></div>", unsafe_allow_html=True)
-                with c2:
-                    st.markdown(f"<div class='info-card'><h4>Context</h4><p>{phase3_models[0].get('context_window','?')} tokens</p></div>", unsafe_allow_html=True)
-                with c3:
-                    st.markdown(f"<div class='info-card'><h4>Safety</h4><p>{phase3_models[0].get('vram_margin_percent',0):.1f}% margin</p></div>", unsafe_allow_html=True)
-            else:
-                st.warning("⚠️ Compatible models available but none are suitable for Phase 3 (14B/8B required).")
+                labels = {
+                    f"{m['name']}  ·  {m.get('vram_needed_gb', '?')} GB": m["name"]
+                    for m in phase3_models
+                }
+                chosen_label = st.selectbox(
+                    "Phase 3 model",
+                    options=list(labels.keys()),
+                    label_visibility="collapsed",
+                )
+                # ── BUG FIX: store and use session state consistently ──
+                st.session_state.selected_model = labels[chosen_label]
 
-        st.markdown("</div></div>", unsafe_allow_html=True)
-    
-    if st.session_state.page == 'history':
-        st.markdown("## 📋 Report History")
-        
-        # Search/filter options
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            search_type = st.selectbox("Search by:", ["All", "Hostname", "Classification"])
-        with col2:
-            search_query = st.text_input("Search query")
-        with col3:
-            if st.button("🔍 Search"):
-                pass
-        
-        st.divider()
-        
-        # Get reports
-        reports = organizer.list_archived_reports(limit=20)
-        
-        if reports:
-            for report in reports:
-                with st.expander(f"📊 {report.get('hostname', 'Unknown')} - {report.get('archived_date', 'N/A')}"):
-                    col1, col2 = st.columns([0.7, 0.3])
-                    
-                    with col1:
-                        st.write(f"**Run ID:** `{report['run_id']}`")
-                        st.write(f"**Classification:** {report.get('primary_classification', 'N/A')}")
-                        st.write(f"**Date:** {report.get('archived_date', 'N/A')}")
-                    
-                    with col2:
-                        files = report.get('files', {})
-                        if files:
-                            st.write("**Available Files:**")
-                            for file_type in files:
-                                st.write(f"• {file_type}")
-                    
-                    # Download options
-                    st.markdown("**Downloads:**")
-                    col_d1, col_d2, col_d3 = st.columns(3)
-                    
-                    if 'SOC' in report.get('files', {}):
-                        docx_path = Path(__file__).parent / "data" / report['files']['SOC']
-                        if docx_path.exists():
-                            with col_d1:
-                                st.download_button(
-                                    "📄 DOCX",
-                                    docx_path.read_bytes(),
-                                    key=f"docx_{report['run_id']}"
-                                )
-                    
-                    if 'incident' in report.get('files', {}):
-                        md_path = Path(__file__).parent / "data" / report['files']['incident']
-                        if md_path.exists():
-                            with col_d2:
-                                st.download_button(
-                                    "📝 Markdown",
-                                    md_path.read_text(),
-                                    key=f"md_{report['run_id']}"
-                                )
-                    
-                    if 'incident_20' in str(report.get('files', {})):
-                        json_path = Path(__file__).parent / "data" / report['files'].get('incident', '')
-                        if json_path.exists():
-                            with col_d3:
-                                st.download_button(
-                                    "📑 JSON",
-                                    json_path.read_text(),
-                                    key=f"json_{report['run_id']}"
-                                )
+                m0 = phase3_models[0]
+                c1, c2, c3 = st.columns(3)
+                c1.metric("VRAM Available", f"{m0.get('vram_available_gb', '?')} GB")
+                c2.metric("Context Window",  f"{m0.get('context_window', '?')}")
+                c3.metric("Safety Margin",   f"{m0.get('vram_margin_percent', 0):.1f}%")
+            else:
+                st.warning("No Phase 3 models available. 14B or 8B model required.")
+
+        with st.expander("🔍 Debug: detection details", expanded=False):
+            st.json({
+                "available":        available_models,
+                "compatible_count": len(compatible_models),
+                "gpu_count":        hw["gpu_count"],
+                "total_vram_gb":    hw["total_vram_gb"],
+            })
+
+    # Run button
+    st.markdown("<div style='margin-top:16px'>", unsafe_allow_html=True)
+    run_clicked = st.button("🚀  Generate Report", use_container_width=False)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # ── Pipeline ──
+    if not run_clicked:
+        return
+
+    if not input_file:
+        st.error("Upload a log file before running.")
+        return
+
+    # ── BUG FIX: read from session_state, not a local variable ──
+    sel_model = st.session_state.selected_model
+    if not sel_model:
+        st.error("Select a model in the Model Selection section.")
+        return
+
+    temp_file = Path("/tmp") / f"soc_{input_file.name}"
+    temp_file.write_bytes(input_file.getvalue())
+
+    steps_ph  = st.empty()
+    status_ph = st.empty()
+
+    phases = {
+        1: {"label": "Extraction", "sub": "Qwen 7B",    "status": "idle"},
+        2: {"label": "Embedding",  "sub": "Nomic",       "status": "idle"},
+        3: {"label": "Report Gen", "sub": "DeepSeek-R1", "status": "idle"},
+    }
+
+    def set_phases(s1, s2, s3):
+        phases[1]["status"] = s1
+        phases[2]["status"] = s2
+        phases[3]["status"] = s3
+        with steps_ph.container():
+            render_steps(phases)
+
+    try:
+        set_phases("active", "idle", "idle")
+        status_ph.info("Phase 1 — Extracting indicators and facts from log data…")
+
+        pipeline = UnifiedPipeline(
+            input_file=str(temp_file),
+            human_insight=analyst_insight,
+            model=sel_model,
+        )
+
+        start = time.time()
+
+        # Phase 2 — embedding (pipeline.run() handles all three internally;
+        # we update the indicators at logical checkpoints around the single call)
+        set_phases("done", "active", "idle")
+        status_ph.info("Phase 2 — Building embeddings and retrieving context…")
+
+        success = pipeline.run()
+        elapsed = time.time() - start
+
+        if success:
+            set_phases("done", "done", "done")
+            status_ph.success(f"Report generated in {elapsed:.1f}s")
+
+            report_path = organizer.archive_report(pipeline.run_id, "Analysis Host", "")
+            if report_path:
+                # ── BUG FIX: use sel_model (resolved from session state) ──
+                db.add_report(
+                    pipeline.run_id,
+                    "Analysis Host",
+                    model_used=sel_model,
+                    processing_time=elapsed,
+                    summary="Report generated successfully",
+                )
+
+                st.markdown("---")
+                st.markdown(
+                    f"<span style='font-family:var(--mono);font-size:12px;color:var(--slate-400)'>Run ID: "
+                    f"<b style='color:var(--navy-800)'>{pipeline.run_id}</b></span>",
+                    unsafe_allow_html=True,
+                )
+
+                docx_p = report_path / f"SOC_Report_{pipeline.run_id}.docx"
+                md_p   = report_path / f"incident_report_{pipeline.run_id}.md"
+                json_p = report_path / f"incident_{pipeline.run_id}.json"
+
+                d1, d2, d3, _ = st.columns([1, 1, 1, 2])
+                if docx_p.exists():
+                    d1.download_button("📄 DOCX",     docx_p.read_bytes(), f"SOC_Report_{pipeline.run_id}.docx",     key="dl_docx")
+                if md_p.exists():
+                    d2.download_button("📝 Markdown", md_p.read_text(),    f"incident_report_{pipeline.run_id}.md",  key="dl_md")
+                if json_p.exists():
+                    d3.download_button("📑 JSON",     json_p.read_text(),  f"incident_{pipeline.run_id}.json",       key="dl_json")
         else:
-            st.info("No reports found. Generate your first report to get started!")
-    
-    if st.session_state.page == 'about':
-        st.markdown("## About iSecurify SOC Report Agent")
+            set_phases("done", "done", "error")
+            status_ph.error("Pipeline failed at report generation phase.")
+
+    except Exception as exc:
+        status_ph.error(f"Unexpected error: {exc}")
+        logger.exception("Pipeline error")
+    finally:
+        if temp_file.exists():
+            temp_file.unlink()
+
+
+def page_history(services):
+    organizer = services["organizer"]
+
+    col_a, col_b, col_c = st.columns([1.2, 2, 0.8])
+    with col_a:
+        st.selectbox("Filter by", ["All", "Hostname", "Classification"], label_visibility="collapsed")
+    with col_b:
+        st.text_input("Search", placeholder="Search reports…", label_visibility="collapsed")
+    with col_c:
+        st.button("Search", use_container_width=True)
+
+    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+
+    reports = organizer.list_archived_reports(limit=20)
+    if not reports:
+        st.info("No reports archived yet. Generate your first report to get started.")
+        return
+
+    for report in reports:
+        host = report.get("hostname", "Unknown Host")
+        date = report.get("archived_date", "N/A")
+        with st.expander(f"📊  {host}  ·  {date}", expanded=False):
+            c1, c2 = st.columns([2, 1])
+            with c1:
+                st.markdown(
+                    f"**Run ID:** `{report['run_id']}`  \n"
+                    f"**Classification:** {report.get('primary_classification', 'N/A')}  \n"
+                    f"**Date:** {date}"
+                )
+            with c2:
+                files = report.get("files", {})
+                if files:
+                    st.markdown("**Files available:**")
+                    for ft in files:
+                        st.caption(f"· {ft}")
+
+            files = report.get("files", {})
+            d1, d2, d3 = st.columns(3)
+
+            soc_file = files.get("SOC", "")
+            if soc_file:
+                p = Path(__file__).parent / "data" / soc_file
+                if p.exists():
+                    d1.download_button("📄 DOCX", p.read_bytes(), key=f"docx_{report['run_id']}")
+
+            inc_file = files.get("incident", "")
+            if inc_file:
+                p = Path(__file__).parent / "data" / inc_file
+                if p.exists():
+                    d2.download_button("📝 Markdown", p.read_text(), key=f"md_{report['run_id']}")
+                    if p.with_suffix(".json").exists():
+                        d3.download_button("📑 JSON", p.with_suffix(".json").read_text(), key=f"json_{report['run_id']}")
+
+
+def page_about():
+    st.markdown("""
+    **iSecurify SOC Report Agent** automates forensic investigation log analysis
+    and produces professional, structured reports for review.
+
+    | Component | Technology |
+    |---|---|
+    | Fact Extraction | Qwen 2.5 7B |
+    | Embedding | Nomic Embed Text |
+    | Report Generation | DeepSeek-R1 |
+    | Knowledge Base | ChromaDB (RAG) |
+    | Interface | Streamlit |
+
+    **Pipeline overview:**
+    Upload forensic logs → Extract indicators (Phase 1) →
+    Build embeddings & retrieve context (Phase 2) →
+    Generate 5-page report (Phase 3) → Export DOCX / MD / JSON
+
+    All processing runs locally. No data leaves the machine.
+    Archives stored at `data/archive/YYYY-MM-DD/<run_id>/`.
+    """)
+    st.caption("Version: 2026  ·  Final Year Engineering Project")
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+def main():
+    services = get_services()
+    detector  = services["detector"]
+    db        = services["db"]
+    hw        = detector.get_hardware_summary()
+    stats     = db.get_stats()
+
+    # ── Sidebar ──
+    with st.sidebar:
+        # Wordmark
         st.markdown("""
-        ### 🎯 Purpose
-        Automated forensic investigation and professional SOC report generation using AI-powered analysis.
-        
-        ### ⚙️ Technology Stack
-        - **Extraction**: Qwen 2.5 7B (semantic fact extraction)
-        - **Embedding**: Nomic Embed Text (knowledge retrieval)
-        - **Reasoning**: DeepSeek-R1 (phased report generation)
-        - **RAG**: ChromaDB (knowledge base search)
-        - **UI**: Streamlit (modern web interface)
-        
-        ### 🚀 How It Works
-        1. **Analyze**: Upload forensic logs (CSV/TXT)
-        2. **Extract**: Qwen identifies key indicators and classifications
-        3. **Retrieve**: ChromaDB injects historical context
-        4. **Generate**: DeepSeek writes professional 5-page report
-        5. **Export**: Download formatted DOCX with corporate branding
-        
-        ### 📊 Report Format
-        - Executive summary
-        - Technical deep-dive
-        - Strategic recommendations
-        - Professional iSecurify branding
-        - Confidentiality footer
-        
-        ### 🔐 Data Protection
-        - All files archived in `data/archive/YYYY-MM-DD/run_id/`
-        - SQLite database for report history
-        - Local processing (no cloud uploads)
-        
-        *Version: 2026 | Project: Final Year Engineering | Company Ready*
-        """)
+        <div style="padding:18px 6px 16px; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:14px;">
+            <span style="font-family:'IBM Plex Sans',sans-serif; font-size:16px; font-weight:700; color:#E4EDF6; letter-spacing:-0.3px;">
+                iSecurify
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:600; letter-spacing:1px;
+                         text-transform:uppercase; color:#60A5FA;
+                         background:rgba(96,165,250,0.10); border:1px solid rgba(96,165,250,0.20);
+                         border-radius:3px; padding:1px 5px; margin-left:7px; vertical-align:middle;">
+                SOC
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Navigation label
+        st.markdown(
+            "<p style='font-size:9px;font-weight:600;letter-spacing:1.2px;"
+            "text-transform:uppercase;color:#3A5068;margin:0 0 6px 4px'>Navigation</p>",
+            unsafe_allow_html=True
+        )
+
+        nav_items = {
+            "generate": "⚡  Generate",
+            "history":  "📋  History",
+            "about":    "ℹ️   About",
+        }
+        # ── BUG FIX: sidebar buttons drive routing via session_state + st.rerun() ──
+        # No query params, no broken conditionals.
+        for key, label in nav_items.items():
+            # Highlight active page by wrapping in a div with the nav-active class
+            if st.session_state.page == key:
+                st.markdown("<div class='nav-active'>", unsafe_allow_html=True)
+            if st.button(label, key=f"nav_{key}", use_container_width=True):
+                st.session_state.page = key
+                st.rerun()
+            if st.session_state.page == key:
+                st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown(
+            "<hr style='border:none;border-top:1px solid rgba(255,255,255,0.06);margin:14px 0'>",
+            unsafe_allow_html=True
+        )
+
+        # Hardware
+        st.markdown(
+            "<p style='font-size:9px;font-weight:600;letter-spacing:1.2px;"
+            "text-transform:uppercase;color:#3A5068;margin:0 0 8px 4px'>Hardware</p>",
+            unsafe_allow_html=True
+        )
+        c1, c2 = st.columns(2)
+        c1.metric("GPUs",  hw["gpu_count"])
+        c2.metric("VRAM",  f"{hw['total_vram_gb']}GB")
+        st.metric("RAM",   f"{hw['available_ram_gb']}GB free")
+
+        if hw["gpu_count"] == 0:
+            st.caption("⚠️ No GPU detected — inference will use system RAM.")
+
+        st.markdown(
+            "<hr style='border:none;border-top:1px solid rgba(255,255,255,0.06);margin:14px 0'>",
+            unsafe_allow_html=True
+        )
+
+        # DB stats
+        st.markdown(
+            "<p style='font-size:9px;font-weight:600;letter-spacing:1.2px;"
+            "text-transform:uppercase;color:#3A5068;margin:0 0 8px 4px'>Stats</p>",
+            unsafe_allow_html=True
+        )
+        st.caption(f"Reports: **{stats.get('total_reports', 0)}**")
+        st.caption(f"Hosts: **{stats.get('unique_hosts', 0)}**")
+        st.caption(f"Avg time: **{stats.get('avg_processing_time', 0):.1f}s**")
+
+        st.markdown(
+            "<hr style='border:none;border-top:1px solid rgba(255,255,255,0.06);margin:14px 0'>",
+            unsafe_allow_html=True
+        )
+
+        # Config
+        st.markdown(
+            "<p style='font-size:9px;font-weight:600;letter-spacing:1.2px;"
+            "text-transform:uppercase;color:#3A5068;margin:0 0 6px 4px'>Config</p>",
+            unsafe_allow_html=True
+        )
+        st.text_input(
+            "Ollama host",
+            value=os.getenv("OLLAMA_HOST", "http://localhost:11434"),
+            label_visibility="collapsed",
+        )
+
+    # ── Main content ──
+    # Wordmark (header — company name only, nothing more)
+    st.markdown("""
+    <div class='wordmark'>
+        <span class='wordmark-name'>iSecurify</span>
+        <span class='wordmark-tag'>SOC Report Agent</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    page_titles = {
+        "generate": "Generate New Forensic Report",
+        "history":  "Report History",
+        "about":    "About",
+    }
+    st.markdown(f"<p class='page-title'>{page_titles[st.session_state.page]}</p>", unsafe_allow_html=True)
+    st.markdown("<hr class='page-divider'>", unsafe_allow_html=True)
+
+    # Route
+    if st.session_state.page == "generate":
+        page_generate(services)
+    elif st.session_state.page == "history":
+        page_history(services)
+    elif st.session_state.page == "about":
+        page_about()
+
 
 if __name__ == "__main__":
     main()
